@@ -33,7 +33,7 @@ Goal: collect, stack, bank. Playable without the Guardian.
 | G-06 | `BankService`: bank zone converts stack to banked Veritys | gameplay | todo | G-04, M-01 | |
 | G-11 | `ReturnPadService`: return pads send the character to the lobby | gameplay | review | B-08 | staying on a `ReturnPad` for `Config.ReturnPad.ChannelSeconds` (1.5, user to confirm; 0 = instant) moves the character to `ReturnTarget`; stack untouched; player attribute `ReturnAt` holds the server time the teleport fires, for a UI countdown |
 | U-01 | HUD: stack count / capacity, banked Veritys | ui | todo | G-04 | |
-| B-02 | Verity orb model | builder | todo | | |
+| B-02 | Verity orb model | builder | review | | `ReplicatedStorage.Assets.Verity`: Model with PrimaryPart `Orb` (2 stud ball, no collision, massless) and decal `Face` on the Front face, pivot at the centre facing -Z; needs saving in Studio. Open: a 30-orb stack is 60 studs against 36 studs of floor headroom; face image ownership and GDD open decision 4 |
 | Q-01 | Playtest M1 loop, report trip time and feel | qa | todo | G-06, U-01 | |
 
 ## M2 — Guardian
