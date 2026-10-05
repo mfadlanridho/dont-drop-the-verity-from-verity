@@ -26,7 +26,7 @@ Goal: collect, stack, bank. Playable without the Guardian.
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
-| G-03 | `VerityService`: spawn, cap, refill | gameplay | todo | G-02, B-01 | |
+| G-03 | `VerityService`: spawn, cap, refill | gameplay | review | G-02, B-01 | pickups live in `Workspace.Pickups`, tag `VerityPickup`, attributes `Tier` and `Value`; G-04 collects through `VerityService.Collect(pickup)`. Placeholder orb until B-02. Region `Weight` attribute steers refills; GDD section 9 should list `Band` and `Weight` |
 | G-04 | `StackService`: server stack state, pickup validation, capacity, speed penalty | gameplay | todo | G-03 | |
 | G-05 | `StackController`: head stack visuals with visual cap | gameplay | todo | G-04 | |
 | G-06 | `BankService`: bank zone converts stack to banked Veritys | gameplay | todo | G-04, M-01 | |
