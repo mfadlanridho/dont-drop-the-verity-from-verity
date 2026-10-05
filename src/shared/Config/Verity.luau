@@ -37,4 +37,8 @@ return table.freeze({
 	-- Studs from the character root at which a pickup is collected, before the
 	-- Magnet upgrade. Not set by the GDD; tune in Q-01.
 	PickupRadius = 6,
+	-- Studs added to the pickup radius per Magnet upgrade level (GDD 4.6).
+	PickupRadiusPerLevel = 2,
+	-- A pickup is worth its value times (1 + this per Multiplier upgrade level).
+	MultiplierPerLevel = 1,
 })
