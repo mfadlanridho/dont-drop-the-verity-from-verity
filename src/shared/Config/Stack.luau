@@ -31,4 +31,21 @@ return table.freeze({
 	OrbSpacing = 0.75,
 	-- Studs between the top of the head and the bottom of the first orb.
 	HeadGap = 0.25,
+
+	-- Stack wobble: the stack bends like a pole whose tip trails the head on
+	-- a spring. Visual only. Lean is measured at the top of a full visual
+	-- stack; shorter stacks bend less.
+	-- Spring pull toward upright. Higher is a faster wobble.
+	WobbleStiffness = 56,
+	-- Spring drag. Higher settles sooner; 2 * sqrt(WobbleStiffness) never overshoots.
+	WobbleDamping = 3.75,
+	-- Studs of lean per stud the spring is displaced.
+	WobbleGain = 3,
+	-- Most the stack can lean, in studs. Starting to run at base speed peaks
+	-- near 6.4 with the values above, so keep this higher or the swing is cut short.
+	WobbleMaxLean = 8,
+	-- Studs of slow sway while standing still.
+	IdleSway = 0.35,
+	-- Idle sway speed, in radians per second.
+	IdleSwaySpeed = 1.5,
 })
