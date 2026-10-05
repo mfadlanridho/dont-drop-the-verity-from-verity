@@ -30,6 +30,8 @@ return table.freeze({
 	ValueAttribute = "StackValue",
 	-- One tier Code per Verity held, bottom of the stack first, e.g. "NNGC".
 	TiersAttribute = "StackTiers",
+	-- True while a pickup within reach is too heavy to fit.
+	RefusedAttribute = "StackRefused",
 
 	-- Head stack visuals. Not set by the GDD. Sized so a full visual stack
 	-- (VisualCap orbs) stays under the tower's 36 stud ceilings, jump included.
@@ -58,12 +60,17 @@ return table.freeze({
 	-- Idle sway speed, in radians per second.
 	IdleSwaySpeed = 1.5,
 
-	-- Carry animation, played on a character while its stack is above zero.
-	-- Asset id of the published animation, owned by the game's group and
-	-- uploaded by tools/carry_animation.py. If it is emptied the animation
-	-- only plays in Studio, straight from the KeyframeSequence at
-	-- ReplicatedStorage.Assets.Animations.Carry.
+	-- Carry animations, played on a character while its stack is above zero:
+	-- a relaxed hold that cross-fades into a strained one as the stack fills.
+	-- Asset ids of the published animations, owned by the game's group and
+	-- uploaded by tools/carry_animation.py. If one is emptied it only plays in
+	-- Studio, straight from the KeyframeSequence of the same name under
+	-- ReplicatedStorage.Assets.Animations (Carry, Strain).
 	CarryAnimationId = "rbxassetid://103959159779590",
-	-- Seconds to blend the arms in and out.
+	StrainAnimationId = "",
+	-- How full the stack is (weight / capacity) when strain starts to show.
+	-- It grows from there to full strain at capacity.
+	StrainStart = 0.5,
+	-- Seconds to blend the animations in, out and between each other.
 	CarryFadeSeconds = 0.25,
 })

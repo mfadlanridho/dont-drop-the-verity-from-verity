@@ -92,16 +92,20 @@ local function livingHumanoid(player: Player): Humanoid?
 end
 
 -- Collects every pickup within reach whose whole weight fits the room left.
--- One that does not fit stays in the world. Returns whether anything was taken.
-local function collect(player: Player, stack: Stack, root: BasePart, pickups: { Instance }, capacity: number): boolean
+-- One that does not fit stays in the world. Returns whether anything was
+-- taken, and whether a pickup in reach was left behind for being too heavy.
+local function collect(
+	player: Player,
+	stack: Stack,
+	root: BasePart,
+	pickups: { Instance },
+	capacity: number
+): (boolean, boolean)
 	local room = capacity - stack.weight
-	if room <= 0 then
-		return false
-	end
-
 	local radius = VerityConfig.PickupRadius + level(player, "Magnet") * VerityConfig.PickupRadiusPerLevel
 	local origin = root.Position
 	local collected = false
+	local refused = false
 
 	for _, pickup in pickups do
 		if not pickup:IsA("PVInstance") or (pickup:GetPivot().Position - origin).Magnitude > radius then
@@ -109,16 +113,18 @@ local function collect(player: Player, stack: Stack, root: BasePart, pickups: { 
 		end
 		-- nil when another player took it earlier this frame.
 		local tier = VerityService.GetTier(pickup)
-		if tier and TIERS[tier].Weight <= room and VerityService.Collect(pickup) then
+		if not tier then
+			continue
+		end
+		if TIERS[tier].Weight > room then
+			refused = true
+		elseif VerityService.Collect(pickup) then
 			push(stack, tier)
 			room -= TIERS[tier].Weight
 			collected = true
-			if room <= 0 then
-				break
-			end
 		end
 	end
-	return collected
+	return collected, refused
 end
 
 local function step()
@@ -142,12 +148,15 @@ local function step()
 			-- A stack does not survive death; otherwise resetting would be a
 			-- free trip back to the bank.
 			pop(player, math.huge)
+			setAttribute(player, Config.RefusedAttribute, false)
 			continue
 		end
 
-		if collect(player, stack, root, pickups, capacity) then
+		local collected, refused = collect(player, stack, root, pickups, capacity)
+		if collected then
 			publish(player, stack)
 		end
+		setAttribute(player, Config.RefusedAttribute, refused)
 
 		local penalty = math.min(stack.weight * Config.SpeedPenaltyPerWeight, Config.MaxSpeedPenalty)
 		local speed = (Config.BaseWalkSpeed + level(player, "Speed") * Config.WalkSpeedPerLevel) * (1 - penalty)
