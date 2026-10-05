@@ -44,6 +44,14 @@ RETURN_PAD = 8        # seconds from an upper floor back to the bank by return p
 OVERHEAD = 5          # seconds per trip spent banking and shopping
 REFILL_PER_SECOND = 2 # zone refill; a solo player cannot collect faster
 
+# --- Guardian assumptions (not measured; Q-02 should give the hit rate) ----
+# A hit drops the whole stack (GDD 4.5). Stacks under MIN_TARGET_WEIGHT are
+# never hunted.
+MIN_TARGET_WEIGHT = 5
+HIT_CHANCE = (0.15, 0.25, 0.35)  # chance a hunted trip is hit, per floor
+RECOVERED = 0.5                  # share of a dropped stack picked back up
+RECOVERY_SECONDS = 10            # time spent picking it back up
+
 
 def cost(upgrade, level):
     """Price of going from `level` to `level + 1`."""
@@ -64,7 +72,7 @@ def rebirth_cost(rebirths):
 
 
 def trip(levels, rebirths):
-    """(seconds, banked) for one full collect-to-bank trip."""
+    """(seconds, banked) for an average full collect-to-bank trip."""
     capacity = BASE_CAPACITY + levels["Capacity"] * CAPACITY_PER_LEVEL
     speed = BASE_SPEED + levels["Speed"] * SPEED_PER_LEVEL
     radius = BASE_RADIUS + levels["Magnet"] * RADIUS_PER_LEVEL
@@ -84,7 +92,14 @@ def trip(levels, rebirths):
     back = TRAVEL_ONE_WAY / (speed * (1 - full_penalty)) if zone == 1 else RETURN_PAD
     # Multiplier and the rebirth bonus both scale banked value, not weight.
     banked = math.floor(pickups * value * multiplier * (1 + REBIRTH_BANK_BONUS * rebirths))
-    return collect + out + back + OVERHEAD, banked
+    seconds = collect + out + back + OVERHEAD
+
+    # Expected cost of the Guardian, averaged over many trips.
+    if carried >= MIN_TARGET_WEIGHT:
+        hit = HIT_CHANCE[zone - 1]
+        banked *= 1 - hit * (1 - RECOVERED)
+        seconds += hit * RECOVERY_SECONDS
+    return seconds, banked
 
 
 def rate(levels, rebirths):
@@ -140,7 +155,7 @@ def simulate(rebirth_goal=3, verbose=True):
 
     if verbose:
         seconds, earned = trip({name: 0 for name in UPGRADES}, 0)
-        print(f"First trip: {seconds:.0f}s for {earned} banked ({earned / seconds * 60:.0f}/min)")
+        print(f"Average first trip: {seconds:.0f}s for {earned:.1f} banked ({earned / seconds * 60:.0f}/min)")
         print(f"First upgrade at {first_upgrade / 60:.1f} min")
         for number, at, took, final, goal in results:
             built = ", ".join(f"{name} {level}" for name, level in final.items())
@@ -151,12 +166,12 @@ def simulate(rebirth_goal=3, verbose=True):
 def print_tables(rows=12):
     for name, (_, _, cap) in UPGRADES.items():
         print(f"\n{name} (max level {cap})")
-        print("level  cost  cumulative")
+        print("level   cost  cumulative")
         total = 0
         for level in range(min(rows, cap)):
             price = cost(name, level)
             total += price
-            print(f"{level + 1:>5}  {price:>4}  {total:>10}")
+            print(f"{level + 1:>5}  {price:>5}  {total:>10}")
     print("\nRebirth costs:", ", ".join(str(rebirth_cost(n)) for n in range(6)))
 
 
