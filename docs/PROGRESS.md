@@ -102,6 +102,7 @@ Goal: reasons to keep playing past the first session.
 | 2026-10-05 | Ramps between floors are curved and inside the tower, one per floor in alternating corners; the outside ramps are removed | user |
 | 2026-10-05 | Player data persists through ProfileStore, vendored as one file, no Wally | user |
 | 2026-10-05 | Veritys have a weight separate from their value: Normal 1/1, Golden 5/3, Corrupted 25/10 (value/weight). Capacity and slowdown count weight, the bank counts value, and a Verity that does not fit stays on the ground. Multiplier multiplies banked value only | user |
+| 2026-10-05 | Balance belongs to the meta agent, which directly edits the economy values in `Config.Verity` and `Config.Stack` (listed in the agent briefs). The user sets pacing targets, qa measures them, gameplay keeps the feel values | user |
 | 2026-10-05 | System owners build and wire their own UI. The UI agent is a UI artist (`ui-artist`) who only polishes working UI | user |
 
 ## Blockers

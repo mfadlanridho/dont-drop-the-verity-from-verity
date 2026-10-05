@@ -1,6 +1,10 @@
 --!strict
 
 -- Stack (GDD 4.2).
+--
+-- Balance values, owned and tuned by the meta agent: BaseCapacity,
+-- CapacityPerLevel, WalkSpeedPerLevel, SpeedPenaltyPerWeight, MaxSpeedPenalty.
+-- tools/economy_sim.py mirrors them. The rest are feel values, owned by gameplay.
 return table.freeze({
 	-- Capacity is the total weight a stack can hold (weights are in
 	-- Config.Verity.Tiers), before any Capacity upgrade.

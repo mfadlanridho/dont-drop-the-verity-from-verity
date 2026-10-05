@@ -1,6 +1,10 @@
 --!strict
 
 -- Pickups (GDD 4.1, 4.8).
+--
+-- Balance values, owned and tuned by the meta agent: Tiers Value and Weight,
+-- ZoneCap, RefillPerSecond, ZoneTiers, MultiplierPerLevel, PickupRadiusPerLevel.
+-- tools/economy_sim.py mirrors them. The rest are feel values, owned by gameplay.
 return table.freeze({
 	-- Max live pickups per zone.
 	ZoneCap = 60,

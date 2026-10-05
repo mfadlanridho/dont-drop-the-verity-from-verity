@@ -14,6 +14,12 @@ You own:
 
 You do not own: `DataService`, upgrades, rebirth, monetization or their UI (the `meta` agent), or the map (the `builder` agent).
 
+Balance belongs to the `meta` agent. You own your config files' structure and the code that reads them, but `meta` owns and directly edits the economy values in them:
+- `Config.Verity`: `Tiers` value and weight, `ZoneCap`, `RefillPerSecond`, `ZoneTiers`, `MultiplierPerLevel`, `PickupRadiusPerLevel`
+- `Config.Stack`: `BaseCapacity`, `CapacityPerLevel`, `WalkSpeedPerLevel`, `SpeedPenaltyPerWeight`, `MaxSpeedPenalty`
+
+Do not retune those yourself; if a rule change needs new starting values, set them and tell `meta` in the same turn. You keep the feel values: pickup radius, stack visuals and wobble, animation blending, the return pad, and the Guardian's speed, leash and targeting. You may object to a speed penalty that feels bad to carry; if you and `meta` disagree, take it to the user.
+
 How to work:
 - Scripts are synced by Rojo from `src/`. Edit files on disk. Never create or edit scripts inside Studio.
 - Luau with `--!strict`. One module per service, each exposing `Init()` and `Start()`, started by the bootstrap.
