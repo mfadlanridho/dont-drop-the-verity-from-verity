@@ -17,7 +17,7 @@ Goal: the project boots with the agreed structure and a graybox map.
 | P-01 | Resolve open decisions in GAME_DESIGN.md section 10 | lead | todo | | needs the user |
 | G-01 | Service/controller bootstrap in `init.server.luau` and `init.client.luau`; remove `Hello.luau` | gameplay | review | | `Shared.Loader` runs every module in `Services/` and `Controllers/`: all `Init()` first, then `Start()` |
 | G-02 | `Config` modules and `Remotes.luau` | gameplay | review | G-01 | Config: `Verity`, `Stack`, `Guardian`, `Drop`. Remotes live in `ReplicatedStorage.Remotes`. `Verity.PickupRadius` (6) is not in the GDD |
-| M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | todo | G-01 | |
+| M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | review | G-01 | profile shape in `Config.Data.Template` and `Types.Profile`. Server API: `GetProfile`, `OnProfileLoaded`, `Update`, `AddBanked`, `TrySpend`, `RecordStack`. Client reads Player attributes `Banked`, `TotalBanked`, `Rebirths`, `TallestStack`, `Upgrade<Id>` and `DataLoaded`; no remote. Data resets every session until M-02 |
 | B-01 | Graybox map meeting the map contract (GDD section 9) | builder | done | | flat meadow layout, superseded by the tower (B-08) and removed from the place |
 | B-08 | Tower graybox map, now `Workspace.Map` | builder | review | | chosen layout, needs saving in Studio; three closed floors `Zone1` to `Zone3`; floor 1 has four spawn regions around the lobby, floors 2 and 3 have one each; `ReturnPad` (tag `ReturnPad`) at the centre of floors 2 and 3 and `ReturnTarget` (tag `ReturnTarget`) in `Map.Spawn` need wiring; gates carry `RequiredRebirths` and do not block yet; GDD sections 4.3, 4.8 and 9 need updating |
 
