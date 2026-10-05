@@ -29,13 +29,13 @@ Goal: collect, stack, bank. Playable without the Guardian.
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
-| G-03 | `VerityService`: spawn, cap, refill | gameplay | review | G-02, B-01 | pickups live in `Workspace.Pickups`, tag `VerityPickup`, attributes `Tier` and `Value`; G-04 collects through `VerityService.Collect(pickup)`. Placeholder orb until B-02. Region `Weight` attribute steers refills; GDD section 9 should list `Weight`. Floors 2 and 3 spawn nothing until `Config.Verity.ZoneTiers` lists `Zone2` and `Zone3` (G-10) |
-| G-04 | `StackService`: server stack state, pickup validation, capacity, speed penalty | gameplay | review | G-03 | Player attributes `Stack` and `StackCapacity` (names in `Config.Stack`) replicate to every client; API `Get`, `GetCapacity`, `Remove`, `Clear`. Pickup is a server distance check each frame, no remote. Upgrade effects per level live in `Config.Stack` and `Config.Verity`. Stack is lost on death (not in GDD) |
-| G-05 | `StackController`: head stack visuals with visual cap | gameplay | review | G-04 | client-only anchored orbs in `Character.VerityStack`, placed each frame so the stack wobbles on a spring (tunables `Wobble*` and `IdleSway*` in `Config.Stack`), for every player; count billboard past `VisualCap`. `Config.Stack.OrbScale` and `OrbSpacing` (both 0.75, user to confirm) keep a 30-orb stack 24.6 studs tall, under the 36 stud ceilings. Only one-player rendering tested |
+| G-03 | `VerityService`: spawn, cap, refill | gameplay | review | G-02, B-01 | pickups live in `Workspace.Pickups`, tag `VerityPickup`, attributes `Tier`, `Value` and `Weight`; tiers are in `Config.Verity.Tiers` and orbs are sized and tinted per tier by `Shared.VerityOrb`; G-04 reads `VerityService.GetTier(pickup)` and collects through `VerityService.Collect(pickup)`, which returns the tier. Placeholder orb until B-02. Region `Weight` attribute steers refills; GDD section 9 should list `Weight`. Floors 2 and 3 now spawn (`Zone2` Normal and Golden, `Zone3` Golden and Corrupted, picked evenly) |
+| G-04 | `StackService`: server stack state, pickup validation, capacity, speed penalty | gameplay | review | G-03 | the stack is a list of tiers; capacity and the speed penalty count weight, banking counts value; a pickup is taken only if its whole weight fits. Player attributes `Stack` (count), `StackWeight`, `StackCapacity`, `StackValue` (Multiplier included) and `StackTiers` (one letter per Verity, e.g. `NNGC`), names in `Config.Stack`. API `Get`, `GetWeight`, `GetCapacity`, `GetValue`, `GetTiers`, `Remove(count)`, `Clear`; the last two return the tiers removed. Pickup is a server distance check each frame, no remote. Upgrade effects per level live in `Config.Stack` and `Config.Verity`. Stack is lost on death (assumed) |
+| G-05 | `StackController`: head stack visuals with visual cap | gameplay | review | G-04 | client-only anchored orbs in `Character.VerityStack`, placed each frame so the stack wobbles on a spring (tunables `Wobble*` and `IdleSway*` in `Config.Stack`), for every player, one orb per Verity sized and tinted by tier from `StackTiers`; count billboard past `VisualCap`. `Config.Stack.OrbScale` and `OrbSpacing` (both 0.75, user to confirm) keep a 30-orb stack 24.6 studs tall, under the 36 stud ceilings. Only one-player rendering tested |
 | G-06 | `BankService`: bank zone converts stack to banked Veritys | gameplay | todo | G-04, M-01 | |
 | G-11 | `ReturnPadService`: return pads send the character to the lobby | gameplay | review | B-08 | staying on a `ReturnPad` for `Config.ReturnPad.ChannelSeconds` (1.5, user to confirm; 0 = instant) moves the character to `ReturnTarget`; stack untouched; player attribute `ReturnAt` holds the server time the teleport fires, for a UI countdown |
 | G-12 | Carry animation while holding a stack | gameplay | review | G-04 | `CarryController` plays it on the local character while `Stack` > 0, arms only, over walk and idle. Published as group asset 103959159779590 (`Config.Stack.CarryAnimationId`) by `tools/carry_animation.py` through Open Cloud; the key is in the untracked `.env`. A preview copy of the keyframes is at `ReplicatedStorage.Assets.Animations.Carry` in the place, rebuilt by `tools/build_carry_animation.luau`. R15 only |
-| G-13 | Working HUD: stack count / capacity, return pad countdown | gameplay | todo | G-04, G-11 | plain, fully wired |
+| G-13 | Working HUD: stack weight / capacity and value, return pad countdown | gameplay | todo | G-04, G-11 | plain, fully wired; reads `StackWeight`, `StackCapacity`, `StackValue` |
 | M-09 | Working HUD: banked Veritys | meta | review | M-01 | `BankedHudController` builds `PlayerGui.BankedHud.Banked.Amount`, left edge, vertically centred; reads the `Banked` attribute. `Shared.Format.Number` abbreviates numbers (1.25K) for any UI |
 | U-01 | HUD polish; sets up the shared theme in `src/client/UI/` | ui-artist | todo | G-13, M-09 | look only, no logic changes |
 | B-02 | Verity orb model | builder | review | | `ReplicatedStorage.Assets.Verity`: Model with PrimaryPart `Orb` (2 stud ball, no collision, massless) and decal `Face` on the Front face, pivot at the centre facing -Z; needs saving in Studio. Open: a 30-orb stack is 60 studs against 36 studs of floor headroom; face image ownership and GDD open decision 4 |
@@ -76,7 +76,7 @@ Goal: reasons to keep playing past the first session.
 | --- | --- | --- | --- | --- | --- |
 | B-05 | Zone 1 art pass | builder | todo | Q-02 | |
 | B-06 | Zone 2 (Dusk Fields) | builder | todo | M-04 | |
-| G-10 | Zone unlock gating and pickup tiers | gameplay | todo | M-04, B-06 | |
+| G-10 | Zone unlock gating and pickup tiers | gameplay | todo | M-04, B-06 | tiers already spawn on floors 2 and 3 (done with the weight change); the gates still do not block and the tier mix per floor is an even split |
 | M-06 | Pets and eggs | meta | todo | M-03 | |
 | M-07 | Daily and playtime rewards | meta | todo | M-02 | |
 | U-04 | Juice: pickup pop, bank burst, smile stages, SFX | ui-artist | todo | U-01 | presentational only |
@@ -101,6 +101,7 @@ Goal: reasons to keep playing past the first session.
 | 2026-10-05 | No open shaft. Players return from upper floors by a teleport pad to the lobby | user |
 | 2026-10-05 | Ramps between floors are curved and inside the tower, one per floor in alternating corners; the outside ramps are removed | user |
 | 2026-10-05 | Player data persists through ProfileStore, vendored as one file, no Wally | user |
+| 2026-10-05 | Veritys have a weight separate from their value: Normal 1/1, Golden 5/3, Corrupted 25/10 (value/weight). Capacity and slowdown count weight, the bank counts value, and a Verity that does not fit stays on the ground. Multiplier multiplies banked value only | user |
 | 2026-10-05 | System owners build and wire their own UI. The UI agent is a UI artist (`ui-artist`) who only polishes working UI | user |
 
 ## Blockers

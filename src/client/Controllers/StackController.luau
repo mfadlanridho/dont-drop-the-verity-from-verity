@@ -1,8 +1,9 @@
 --!strict
 
--- Renders every player's stack on their head (GDD 4.2). The size comes from
--- the Player attribute StackService keeps current; this only draws it. Past
--- the visual cap no more orbs are added and a count billboard appears instead.
+-- Renders every player's stack on their head (GDD 4.2), one orb per Verity
+-- held, sized and tinted by tier. The contents come from the Player attributes
+-- StackService keeps current; this only draws them. Past the visual cap no
+-- more orbs are added and a count billboard appears instead.
 --
 -- The orbs are anchored and placed every frame so the stack can wobble: it
 -- bends like a pole whose tip trails the head on a spring.
@@ -14,6 +15,8 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"):WaitForChild("Stack"))
+local VerityConfig = require(Shared.Config:WaitForChild("Verity"))
+local VerityOrb = require(Shared:WaitForChild("VerityOrb"))
 
 local STACK_FOLDER_NAME = "VerityStack"
 local TEMPLATE_WAIT_SECONDS = 10
@@ -32,7 +35,8 @@ type Visual = {
 	head: BasePart,
 	folder: Folder,
 	orbs: { Model },
-	-- Each orb's PrimaryPart and its CFrame this frame, index-matched with `orbs`.
+	-- Each orb's tier Code, PrimaryPart and CFrame this frame, index-matched with `orbs`.
+	codes: { string },
 	parts: { BasePart },
 	cframes: { CFrame },
 	billboard: BillboardGui,
@@ -46,7 +50,9 @@ type Visual = {
 
 local StackController = {}
 
-local template: Model?
+-- One ready-made stack orb per tier Code.
+local templates: { [string]: Model } = {}
+-- Radius of a Normal stack orb; the column is laid out around it.
 local orbRadius = 0
 local visuals: { [Player]: Visual } = {}
 
@@ -59,8 +65,8 @@ local function orbHeight(head: BasePart, index: number): number
 	return head.Size.Y / 2 + Config.HeadGap + orbRadius + (index - 1) * Config.OrbSpacing
 end
 
-local function createOrb(): Model?
-	local source = template
+local function createOrb(code: string): Model?
+	local source = templates[code]
 	if not source then
 		return nil
 	end
@@ -118,6 +124,7 @@ local function createVisual(player: Player, head: BasePart): Visual
 		head = head,
 		folder = folder,
 		orbs = {},
+		codes = {},
 		parts = {},
 		cframes = {},
 		billboard = billboard,
@@ -196,12 +203,27 @@ local function render(player: Player)
 		visuals[player] = visual
 	end
 
-	local stack = player:GetAttribute(Config.StackAttribute)
-	local size = if typeof(stack) == "number" then stack else 0
+	local tiers = player:GetAttribute(Config.TiersAttribute)
+	local codes = if typeof(tiers) == "string" then tiers else ""
+	local size = #codes
 	local shown = math.min(size, Config.VisualCap)
 
-	for index = #visual.orbs + 1, shown do
-		local orb = createOrb()
+	-- Keep the orbs that still match from the bottom up; drop the rest.
+	local kept = 0
+	while kept < shown and visual.codes[kept + 1] == string.sub(codes, kept + 1, kept + 1) do
+		kept += 1
+	end
+	for index = #visual.orbs, kept + 1, -1 do
+		visual.orbs[index]:Destroy()
+		visual.orbs[index] = nil
+		visual.codes[index] = nil
+		visual.parts[index] = nil
+		visual.cframes[index] = nil
+	end
+
+	for index = kept + 1, shown do
+		local code = string.sub(codes, index, index)
+		local orb = createOrb(code)
 		if not orb then
 			break
 		end
@@ -210,14 +232,9 @@ local function render(player: Player)
 		primary.CFrame = CFrame.new(head.Position + Vector3.yAxis * orbHeight(head, index))
 		orb.Parent = visual.folder
 		visual.orbs[index] = orb
+		visual.codes[index] = code
 		visual.parts[index] = primary
 		visual.cframes[index] = primary.CFrame
-	end
-	for index = #visual.orbs, shown + 1, -1 do
-		visual.orbs[index]:Destroy()
-		visual.orbs[index] = nil
-		visual.parts[index] = nil
-		visual.cframes[index] = nil
 	end
 
 	-- The count rides the top orb, so it sways with the stack.
@@ -233,7 +250,7 @@ local function onCharacter(player: Player, character: Model)
 end
 
 local function track(player: Player)
-	player:GetAttributeChangedSignal(Config.StackAttribute):Connect(function()
+	player:GetAttributeChangedSignal(Config.TiersAttribute):Connect(function()
 		render(player)
 	end)
 	player.CharacterAdded:Connect(function(character)
@@ -248,10 +265,10 @@ function StackController.Init()
 	local assets = ReplicatedStorage:WaitForChild("Assets", TEMPLATE_WAIT_SECONDS)
 	local found = assets and assets:WaitForChild("Verity", TEMPLATE_WAIT_SECONDS)
 	if found and found:IsA("Model") and found.PrimaryPart then
-		local scaled = found:Clone()
-		scaled:ScaleTo(Config.OrbScale)
-		template = scaled
-		orbRadius = (scaled.PrimaryPart :: BasePart).Size.Y / 2
+		for tier, look in VerityConfig.Tiers :: { [any]: { Code: string } } do
+			templates[look.Code] = VerityOrb.Create(found, tier, Config.OrbScale)
+		end
+		orbRadius = (found.PrimaryPart :: BasePart).Size.Y / 2 * Config.OrbScale
 	else
 		warn("StackController: ReplicatedStorage.Assets.Verity is missing or has no PrimaryPart; stacks will show no orbs")
 	end

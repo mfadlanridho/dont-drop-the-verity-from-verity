@@ -12,6 +12,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Verity)
 local Types = require(Shared.Types)
+local VerityOrb = require(Shared.VerityOrb)
 
 local REGION_TAG = "VeritySpawnRegion"
 local WEIGHT_ATTRIBUTE = "Weight"
@@ -31,9 +32,10 @@ local VerityService = {}
 
 local rng = Random.new()
 local zones: { Zone } = {}
-local zoneOfPickup: { [Instance]: Zone } = {}
+local live: { [Instance]: { zone: Zone, tier: Types.VerityTier } } = {}
 local pickupFolder: Folder
-local template: PVInstance?
+-- One ready-made orb per tier, cloned for each spawn.
+local templates: { [Types.VerityTier]: Model } = {}
 
 -- Relative chance of a region receiving the next pickup. Read live so the
 -- attribute can be retuned in Studio during a playtest.
@@ -86,27 +88,11 @@ local function findSpawnPoint(zone: Zone): Vector3?
 	return nil
 end
 
-local function createOrb(): PVInstance
-	if template then
-		return template:Clone()
-	end
-
-	local orb = Instance.new("Part")
-	orb.Name = TEMPLATE_NAME
-	orb.Shape = Enum.PartType.Ball
-	orb.Size = Vector3.one * Config.PlaceholderDiameter
-	orb.Color = Color3.fromRGB(255, 221, 51)
-	orb.Material = Enum.Material.Neon
-	orb.Anchored = true
-	orb.CanCollide = false
-	return orb
-end
-
 local function release(pickup: Instance)
-	local zone = zoneOfPickup[pickup]
-	if zone then
-		zoneOfPickup[pickup] = nil
-		zone.count -= 1
+	local record = live[pickup]
+	if record then
+		live[pickup] = nil
+		record.zone.count -= 1
 	end
 end
 
@@ -117,14 +103,20 @@ local function spawnPickup(zone: Zone): boolean
 	end
 
 	local tier = zone.tiers[rng:NextInteger(1, #zone.tiers)]
-	local pickup = createOrb()
+	local template = templates[tier]
+	if not template then
+		return false
+	end
+
+	local pickup = template:Clone()
 	pickup:SetAttribute("Tier", tier)
-	pickup:SetAttribute("Value", Config.TierValue[tier])
+	pickup:SetAttribute("Value", Config.Tiers[tier].Value)
+	pickup:SetAttribute("Weight", Config.Tiers[tier].Weight)
 	pickup:PivotTo(CFrame.new(point))
 	pickup.Parent = pickupFolder
 	CollectionService:AddTag(pickup, Config.PickupTag)
 
-	zoneOfPickup[pickup] = zone
+	live[pickup] = { zone = zone, tier = tier }
 	zone.count += 1
 	pickup.Destroying:Once(function()
 		release(pickup)
@@ -147,17 +139,24 @@ local function refill(zone: Zone, dt: number)
 	end
 end
 
--- Removes a live pickup from the world and returns its stack value, or nil if
--- it is not a live pickup (already collected, or never one). The caller is
--- responsible for deciding the player is allowed to collect it.
-function VerityService.Collect(pickup: Instance): number?
-	if not zoneOfPickup[pickup] then
+-- The tier of a live pickup, or nil if it is not one (already collected, or
+-- never a pickup).
+function VerityService.GetTier(pickup: Instance): Types.VerityTier?
+	local record = live[pickup]
+	return record and record.tier
+end
+
+-- Removes a live pickup from the world and returns its tier, or nil if it is
+-- not a live pickup. The caller is responsible for deciding the player is
+-- allowed to collect it.
+function VerityService.Collect(pickup: Instance): Types.VerityTier?
+	local record = live[pickup]
+	if not record then
 		return nil
 	end
-	local value = pickup:GetAttribute("Value")
 	release(pickup)
 	pickup:Destroy()
-	return if typeof(value) == "number" then value else nil
+	return record.tier
 end
 
 function VerityService.Init()
@@ -166,11 +165,13 @@ function VerityService.Init()
 	pickupFolder.Parent = Workspace
 
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
-	local found = assets and assets:FindFirstChild(TEMPLATE_NAME)
-	if found and found:IsA("PVInstance") then
-		template = found
+	local model = assets and assets:FindFirstChild(TEMPLATE_NAME)
+	if model and model:IsA("Model") then
+		for tier in Config.Tiers :: { [Types.VerityTier]: any } do
+			templates[tier] = VerityOrb.Create(model, tier, 1)
+		end
 	else
-		warn("VerityService: ReplicatedStorage.Assets.Verity is missing; using a placeholder orb")
+		warn("VerityService: ReplicatedStorage.Assets.Verity is missing; no pickups will spawn")
 	end
 
 	-- A zone is the folder under Workspace.Map that holds the regions.

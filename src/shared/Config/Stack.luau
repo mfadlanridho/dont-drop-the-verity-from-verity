@@ -2,29 +2,38 @@
 
 -- Stack (GDD 4.2).
 return table.freeze({
-	-- Max stack before any Capacity upgrade.
+	-- Capacity is the total weight a stack can hold (weights are in
+	-- Config.Verity.Tiers), before any Capacity upgrade.
 	BaseCapacity = 10,
 	-- Capacity added per Capacity upgrade level (GDD 4.6).
 	CapacityPerLevel = 5,
-	-- Orbs rendered on the head; past this the stack shows a count billboard.
+	-- Orbs rendered on the head, one per Verity held; past this the stack
+	-- shows a count billboard.
 	VisualCap = 30,
 
 	-- Walk speed before any Speed upgrade.
 	BaseWalkSpeed = 16,
 	-- Walk speed added per Speed upgrade level (GDD 4.6).
 	WalkSpeedPerLevel = 1,
-	-- Fraction of walk speed lost per stacked Verity.
-	SpeedPenaltyPerVerity = 0.01,
+	-- Fraction of walk speed lost per unit of weight carried.
+	SpeedPenaltyPerWeight = 0.01,
 	-- Ceiling on the total fraction lost.
 	MaxSpeedPenalty = 0.4,
 
 	-- Player attributes the server keeps current and every client can read.
+	-- Number of Veritys held.
 	StackAttribute = "Stack",
+	-- Total weight held, and the most the player can hold.
+	WeightAttribute = "StackWeight",
 	CapacityAttribute = "StackCapacity",
+	-- What the stack would bank for right now, Multiplier upgrade included.
+	ValueAttribute = "StackValue",
+	-- One tier Code per Verity held, bottom of the stack first, e.g. "NNGC".
+	TiersAttribute = "StackTiers",
 
 	-- Head stack visuals. Not set by the GDD. Sized so a full visual stack
 	-- (VisualCap orbs) stays under the tower's 36 stud ceilings, jump included.
-	-- Stack orb size as a fraction of the Verity model.
+	-- Stack orb size as a fraction of the Verity model, before the tier's own Scale.
 	OrbScale = 0.75,
 	-- Studs between the centres of neighbouring stack orbs. Below the orb
 	-- diameter (2 * OrbScale) the orbs overlap.

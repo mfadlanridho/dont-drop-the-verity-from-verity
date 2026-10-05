@@ -1,8 +1,10 @@
 --!strict
 
--- Owns every player's stack (GDD 4.2): collects pickups in range, enforces
--- capacity and applies the speed penalty. The count is mirrored to a Player
--- attribute so every client can render it; clients never send stack amounts.
+-- Owns every player's stack (GDD 4.2): which Veritys they hold, bottom first.
+-- Collects pickups in range that fit the remaining capacity, and applies the
+-- speed penalty. Capacity and the penalty count weight; banking counts value.
+-- The stack is mirrored to Player attributes so every client can render it;
+-- clients never send stack amounts.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -16,9 +18,20 @@ local Types = require(Shared.Types)
 local DataService = require(script.Parent.DataService)
 local VerityService = require(script.Parent.VerityService)
 
+type Tier = Types.VerityTier
+
+type Stack = {
+	tiers: { Tier },
+	weight: number,
+	-- Sum of tier values, before the Multiplier upgrade.
+	baseValue: number,
+}
+
+local TIERS = VerityConfig.Tiers :: { [Tier]: { Value: number, Weight: number, Code: string } }
+
 local StackService = {}
 
-local stacks: { [Player]: number } = {}
+local stacks: { [Player]: Stack } = {}
 
 -- Upgrade level, or 0 while the profile is still loading.
 local function level(player: Player, id: Types.UpgradeId): number
@@ -26,11 +39,47 @@ local function level(player: Player, id: Types.UpgradeId): number
 	return if profile then profile.Upgrades[id] or 0 else 0
 end
 
-local function setStack(player: Player, size: number)
-	if stacks[player] ~= size then
-		stacks[player] = size
-		player:SetAttribute(Config.StackAttribute, size)
+local function setAttribute(player: Player, name: string, value: any)
+	if player:GetAttribute(name) ~= value then
+		player:SetAttribute(name, value)
 	end
+end
+
+-- Mirrors the stack to the player's attributes after it changes.
+local function publish(player: Player, stack: Stack)
+	local codes = table.create(#stack.tiers)
+	for index, tier in stack.tiers do
+		codes[index] = TIERS[tier].Code
+	end
+	setAttribute(player, Config.TiersAttribute, table.concat(codes))
+	setAttribute(player, Config.StackAttribute, #stack.tiers)
+	setAttribute(player, Config.WeightAttribute, stack.weight)
+end
+
+local function push(stack: Stack, tier: Tier)
+	table.insert(stack.tiers, tier)
+	stack.weight += TIERS[tier].Weight
+	stack.baseValue += TIERS[tier].Value
+end
+
+-- Takes up to `count` Veritys off the top and returns them, top first.
+local function pop(player: Player, count: number): { Tier }
+	local stack = stacks[player]
+	local removed: { Tier } = {}
+	if not stack then
+		return removed
+	end
+
+	for _ = 1, math.min(count, #stack.tiers) do
+		local tier = table.remove(stack.tiers) :: Tier
+		stack.weight -= TIERS[tier].Weight
+		stack.baseValue -= TIERS[tier].Value
+		table.insert(removed, tier)
+	end
+	if #removed > 0 then
+		publish(player, stack)
+	end
+	return removed
 end
 
 local function livingHumanoid(player: Player): Humanoid?
@@ -42,55 +91,65 @@ local function livingHumanoid(player: Player): Humanoid?
 	return humanoid
 end
 
--- Collects every pickup within reach until the stack is full, and returns
--- the new stack size. A full stack leaves pickups in the world.
-local function collect(player: Player, root: BasePart, pickups: { Instance }, size: number, capacity: number): number
-	if size >= capacity then
-		return size
+-- Collects every pickup within reach whose whole weight fits the room left.
+-- One that does not fit stays in the world. Returns whether anything was taken.
+local function collect(player: Player, stack: Stack, root: BasePart, pickups: { Instance }, capacity: number): boolean
+	local room = capacity - stack.weight
+	if room <= 0 then
+		return false
 	end
 
 	local radius = VerityConfig.PickupRadius + level(player, "Magnet") * VerityConfig.PickupRadiusPerLevel
-	local multiplier = 1 + level(player, "Multiplier") * VerityConfig.MultiplierPerLevel
 	local origin = root.Position
+	local collected = false
 
 	for _, pickup in pickups do
 		if not pickup:IsA("PVInstance") or (pickup:GetPivot().Position - origin).Magnitude > radius then
 			continue
 		end
 		-- nil when another player took it earlier this frame.
-		local value = VerityService.Collect(pickup)
-		if value then
-			size = math.min(size + value * multiplier, capacity)
-			if size >= capacity then
+		local tier = VerityService.GetTier(pickup)
+		if tier and TIERS[tier].Weight <= room and VerityService.Collect(pickup) then
+			push(stack, tier)
+			room -= TIERS[tier].Weight
+			collected = true
+			if room <= 0 then
 				break
 			end
 		end
 	end
-	return size
+	return collected
 end
 
 local function step()
 	local pickups = CollectionService:GetTagged(VerityConfig.PickupTag)
 
 	for _, player in Players:GetPlayers() do
-		local capacity = StackService.GetCapacity(player)
-		if player:GetAttribute(Config.CapacityAttribute) ~= capacity then
-			player:SetAttribute(Config.CapacityAttribute, capacity)
+		local stack = stacks[player]
+		if not stack then
+			continue
 		end
+
+		local capacity = StackService.GetCapacity(player)
+		setAttribute(player, Config.CapacityAttribute, capacity)
+		-- Not folded into publish: a Multiplier purchase changes it without
+		-- the stack changing.
+		setAttribute(player, Config.ValueAttribute, StackService.GetValue(player))
 
 		local humanoid = livingHumanoid(player)
 		local root = humanoid and humanoid.RootPart
 		if not humanoid or not root then
 			-- A stack does not survive death; otherwise resetting would be a
 			-- free trip back to the bank.
-			setStack(player, 0)
+			pop(player, math.huge)
 			continue
 		end
 
-		local size = collect(player, root, pickups, stacks[player] or 0, capacity)
-		setStack(player, size)
+		if collect(player, stack, root, pickups, capacity) then
+			publish(player, stack)
+		end
 
-		local penalty = math.min(size * Config.SpeedPenaltyPerVerity, Config.MaxSpeedPenalty)
+		local penalty = math.min(stack.weight * Config.SpeedPenaltyPerWeight, Config.MaxSpeedPenalty)
 		local speed = (Config.BaseWalkSpeed + level(player, "Speed") * Config.WalkSpeedPerLevel) * (1 - penalty)
 		if humanoid.WalkSpeed ~= speed then
 			humanoid.WalkSpeed = speed
@@ -98,36 +157,61 @@ local function step()
 	end
 end
 
+local function add(player: Player)
+	local stack: Stack = { tiers = {}, weight = 0, baseValue = 0 }
+	stacks[player] = stack
+	publish(player, stack)
+end
+
+-- Number of Veritys held.
 function StackService.Get(player: Player): number
-	return stacks[player] or 0
+	local stack = stacks[player]
+	return if stack then #stack.tiers else 0
+end
+
+-- Total weight held, out of GetCapacity.
+function StackService.GetWeight(player: Player): number
+	local stack = stacks[player]
+	return if stack then stack.weight else 0
 end
 
 function StackService.GetCapacity(player: Player): number
 	return Config.BaseCapacity + level(player, "Capacity") * Config.CapacityPerLevel
 end
 
--- Takes up to `amount` Veritys off the stack and returns how many were taken.
-function StackService.Remove(player: Player, amount: number): number
-	local size = stacks[player] or 0
-	local taken = math.clamp(math.floor(amount), 0, size)
-	setStack(player, size - taken)
-	return taken
+-- What the stack would bank for right now, Multiplier upgrade included.
+function StackService.GetValue(player: Player): number
+	local stack = stacks[player]
+	if not stack then
+		return 0
+	end
+	return stack.baseValue * (1 + level(player, "Multiplier") * VerityConfig.MultiplierPerLevel)
 end
 
--- Empties the stack and returns what it held.
-function StackService.Clear(player: Player): number
-	return StackService.Remove(player, math.huge)
+-- A copy of the tiers held, bottom of the stack first.
+function StackService.GetTiers(player: Player): { Tier }
+	local stack = stacks[player]
+	return if stack then table.clone(stack.tiers) else {}
+end
+
+-- Takes up to `count` Veritys off the top of the stack and returns their
+-- tiers, top first.
+function StackService.Remove(player: Player, count: number): { Tier }
+	return pop(player, math.max(math.floor(count), 0))
+end
+
+-- Empties the stack and returns the tiers it held, top first.
+function StackService.Clear(player: Player): { Tier }
+	return pop(player, math.huge)
 end
 
 function StackService.Init()
-	Players.PlayerAdded:Connect(function(player)
-		setStack(player, 0)
-	end)
+	Players.PlayerAdded:Connect(add)
 	Players.PlayerRemoving:Connect(function(player)
 		stacks[player] = nil
 	end)
 	for _, player in Players:GetPlayers() do
-		setStack(player, 0)
+		add(player)
 	end
 end
 

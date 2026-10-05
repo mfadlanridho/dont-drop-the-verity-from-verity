@@ -15,10 +15,10 @@ A +1-style Roblox collect-a-thon. You pick up Veritys (the smiling yellow orb fr
 
 ## 3. Core loop
 
-1. **Collect** — walk over a Verity, +1 to your stack (times your multiplier).
-2. **Carry** — the stack slows you down as it grows.
+1. **Collect** — walk over a Verity and it goes on your stack, if its weight fits.
+2. **Carry** — the heavier the stack, the slower you move.
 3. **Survive** — the Guardian hunts the tallest stack outside the safe zone.
-4. **Bank** — step into the bank zone to convert the stack into banked Veritys (the spendable currency).
+4. **Bank** — step into the bank zone to convert the stack's value into banked Veritys (the spendable currency).
 5. **Upgrade** — spend banked Veritys on capacity, speed, magnet and multiplier.
 6. **Rebirth** — reset upgrades and banked Veritys for a permanent multiplier and access to the next zone.
 
@@ -31,20 +31,30 @@ All numbers below are starting values and live in `src/shared/Config` so they ca
 ### 4.1 Veritys (pickups)
 
 - Spawn at random points inside each zone's spawn region, up to a per-zone cap (start: 60), refilling at a fixed rate (start: 2 per second).
-- Tiers, by zone: Normal (1), Golden (5), Corrupted (25). Higher tiers only spawn in later zones.
-- Collected by touch, validated on the server (distance check against the character).
-- A full stack cannot pick up more; the pickup stays in the world.
+- Each tier has a value and a weight. Value is what the Verity banks for. Weight is what it uses of the stack's capacity and what slows the carrier. Better tiers bank more per unit of weight, so they are worth more per trip but each one is a bigger commitment.
+
+  | Tier | Value | Weight | Value per weight |
+  | --- | --- | --- | --- |
+  | Normal | 1 | 1 | 1 |
+  | Golden | 5 | 3 | 1.7 |
+  | Corrupted | 25 | 10 | 2.5 |
+
+- Higher tiers only spawn in later zones (4.8). Each spawn picks one of its zone's tiers at random.
+- Collected by walking within reach, checked on the server (distance from the character). There is no pickup remote.
+- A Verity is only picked up if its whole weight fits in the capacity the player has left. One that does not fit stays in the world.
 
 ### 4.2 Stack
 
-- Starts at capacity 10. Capacity is the main upgrade.
-- Rendered as Veritys stacked on the head. Past a visual cap (start: 30 orbs) the stack stops growing in parts and shows a count billboard instead, to protect performance.
-- Speed penalty: 1% of walk speed per stacked Verity, capped at 40%.
+- The stack is the list of Veritys a player holds, bottom first. It has a count (how many), a weight (the sum of their weights) and a value (the sum of their values).
+- Capacity is a weight limit. It starts at 10 and is the main upgrade. A new player can hold ten Normals, three Goldens, or exactly one Corrupted.
+- Rendered as one orb per Verity stacked on the head, sized and tinted by tier. Past a visual cap (start: 30 orbs) the stack stops growing in parts and shows a count billboard instead, to protect performance.
+- Speed penalty: 1% of walk speed per unit of weight carried, capped at 40%.
+- The stack is lost on death **[ASSUMED]**, so resetting is not a free trip to the bank.
 - Stack state lives on the server. Clients only render it.
 
 ### 4.3 Bank
 
-- A zone at spawn. Entering it converts the whole stack to banked Veritys instantly **[ASSUMED]**.
+- A zone at spawn. Entering it converts the whole stack to banked Veritys instantly **[ASSUMED]**. The amount is the stack's value times the player's multipliers.
 - The bank zone and the spawn area are a safe zone: the Guardian cannot enter or target players inside.
 
 ### 4.4 Verity Guardian
@@ -58,7 +68,7 @@ All numbers below are starting values and live in `src/shared/Config` so they ca
 
 ### 4.5 Dropping
 
-- A Guardian hit drops 50% of the stack, rounded up **[ASSUMED]**.
+- A Guardian hit drops 50% of the stack, rounded up **[ASSUMED]**. Whether that is half the Veritys or half the weight is open (section 10).
 - Dropped Veritys scatter around the player as pickups that anyone can collect, and despawn after 10 seconds.
 - The hit player gets 3 seconds of immunity so they cannot be chain-hit.
 - No player-versus-player knocking in v1.
@@ -69,10 +79,10 @@ Bought with banked Veritys, each with escalating cost:
 
 | Upgrade | Effect per level |
 | --- | --- |
-| Capacity | +5 max stack |
+| Capacity | +5 weight capacity |
 | Speed | +1 base walk speed |
 | Magnet | +2 studs pickup radius |
-| Multiplier | +1 Verity per pickup |
+| Multiplier | +100% of base value when banked (level 1 doubles it, level 2 triples it); weight is unchanged |
 
 ### 4.7 Rebirth
 
@@ -149,7 +159,7 @@ The builder provides these; the gameplay code looks them up:
 
 | Instance | Location | Purpose |
 | --- | --- | --- |
-| `SpawnRegion` parts, tag `VeritySpawnRegion` | `Workspace.Map.Zone1` | where pickups spawn |
+| `SpawnRegion` parts, tag `VeritySpawnRegion`, number attribute `Weight` | direct children of each `Workspace.Map.Zone<n>` folder | where pickups spawn. `Weight` is the region's relative share of its zone's spawns; it has nothing to do with a Verity's carry weight |
 | `BankZone` part, tag `BankZone` | `Workspace.Map.Spawn` | banking trigger |
 | `SafeZone` part, tag `SafeZone` | `Workspace.Map.Spawn` | Guardian exclusion volume |
 | `GuardianSpawn` part, tag `GuardianSpawn` | `Workspace.Map.Zone1` | Guardian home position |
@@ -161,4 +171,5 @@ The builder provides these; the gameplay code looks them up:
 1. **Drop amount on hit** — 50% assumed. Alternatives: full stack, or a fixed number.
 2. **Banking** — bank zone assumed. Alternative: stack counts permanently on pickup, and the Guardian only removes un-upgraded progress.
 3. **Guardian targeting** — tallest stack assumed. Alternative: nearest player.
-4. **IP** — Verity is ThatMob's character. Build original models and audio rather than reusing ripped assets, and decide whether the title uses the name as-is.
+4. **Drop on a tiered stack** — with tiers of different weight, "drop 50%" can mean half the Veritys from the top of the stack, or half the weight.
+5. **IP** — Verity is ThatMob's character. Build original models and audio rather than reusing ripped assets, and decide whether the title uses the name as-is.
