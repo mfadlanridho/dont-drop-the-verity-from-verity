@@ -15,8 +15,8 @@ Goal: the project boots with the agreed structure and a graybox map.
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
 | P-01 | Resolve open decisions in GAME_DESIGN.md section 10 | lead | todo | | needs the user |
-| G-01 | Service/controller bootstrap in `init.server.luau` and `init.client.luau`; remove `Hello.luau` | gameplay | todo | | |
-| G-02 | `Config` modules and `Remotes.luau` | gameplay | todo | G-01 | |
+| G-01 | Service/controller bootstrap in `init.server.luau` and `init.client.luau`; remove `Hello.luau` | gameplay | review | | `Shared.Loader` runs every module in `Services/` and `Controllers/`: all `Init()` first, then `Start()` |
+| G-02 | `Config` modules and `Remotes.luau` | gameplay | review | G-01 | Config: `Verity`, `Stack`, `Guardian`, `Drop`. Remotes live in `ReplicatedStorage.Remotes`. `Verity.PickupRadius` (6) is not in the GDD |
 | M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | todo | G-01 | |
 | B-01 | Graybox map meeting the map contract (GDD section 9) | builder | review | | built in Studio, needs saving; spawn regions carry `Band` and `Weight` attributes for G-03 |
 
