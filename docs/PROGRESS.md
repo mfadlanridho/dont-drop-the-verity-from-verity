@@ -21,7 +21,7 @@ Goal: the project boots with the agreed structure and a graybox map.
 | G-02 | `Config` modules and `Remotes.luau` | gameplay | review | G-01 | Config: `Verity`, `Stack`, `Guardian`, `Drop`. Remotes live in `ReplicatedStorage.Remotes`. `Verity.PickupRadius` (6) is not in the GDD |
 | M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | review | G-01 | profile shape in `Config.Data.Template` and `Types.Profile`. Server API: `GetProfile`, `OnProfileLoaded`, `Update`, `AddBanked`, `TrySpend`, `RecordStack`. Client reads Player attributes `Banked`, `TotalBanked`, `Rebirths`, `TallestStack`, `Upgrade<Id>` and `DataLoaded`; no remote. Data resets every session until M-02 |
 | B-01 | Graybox map meeting the map contract (GDD section 9) | builder | done | | flat meadow layout, superseded by the tower (B-08) and removed from the place |
-| B-08 | Tower graybox map, now `Workspace.Map` | builder | review | | chosen layout, needs saving in Studio; three closed floors `Zone1` to `Zone3`; floor 1 has four spawn regions around the lobby, floors 2 and 3 have one each; `ReturnPad` (tag `ReturnPad`) at the centre of floors 2 and 3 and `ReturnTarget` (tag `ReturnTarget`) in `Map.Spawn` need wiring; gates carry `RequiredRebirths` and do not block yet; GDD sections 4.3, 4.8 and 9 need updating |
+| B-08 | Tower graybox map, now `Workspace.Map` | builder | review | | chosen layout, needs saving in Studio; three floors `Zone1` to `Zone3`; curved interior ramps `Zone2.RampTo2` (south-west corner of floor 1) and `Zone3.RampTo3` (north-east corner of floor 2), each arriving through a railed opening in the floor above, walked end to end in a playtest; spawn regions: four on floor 1, three each on floors 2 and 3 (split around the opening, `Weight` by area); return pads wired in G-11; gates carry `RequiredRebirths` and do not block yet; GDD sections 4.3, 4.8 and 9 need updating |
 
 ## M1 — Core loop
 
@@ -99,6 +99,7 @@ Goal: reasons to keep playing past the first session.
 | 2026-10-05 | Scripts live in Rojo `src/`; map lives in the Studio place file | initial setup |
 | 2026-10-05 | Map is a tower: stacked floors, bank and safe zone in the lobby on floor 1. Flat meadow map removed | user |
 | 2026-10-05 | No open shaft. Players return from upper floors by a teleport pad to the lobby | user |
+| 2026-10-05 | Ramps between floors are curved and inside the tower, one per floor in alternating corners; the outside ramps are removed | user |
 | 2026-10-05 | Player data persists through ProfileStore, vendored as one file, no Wally | user |
 | 2026-10-05 | System owners build and wire their own UI. The UI agent is a UI artist (`ui-artist`) who only polishes working UI | user |
 
