@@ -1,44 +1,47 @@
 --!strict
 
 -- Owns every player's profile. Other services read and change player data
--- through this module only. Profiles live in memory for the session; DataStore
--- persistence arrives with M-02 behind the same API.
+-- through this module only. Persistence is ProfileStore's: it session-locks
+-- each profile to one server, autosaves, retries failed DataStore calls, and
+-- saves on leave and on server shutdown.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Data)
 local Types = require(Shared.Types)
+local ProfileStore = (require :: any)(script.Parent.Parent.Vendor.ProfileStore)
 
 type Profile = Types.Profile
 
 local DataService = {}
 
+-- MIGRATIONS[n] upgrades saved data from Version n to n + 1, in place.
+local MIGRATIONS: { [number]: (data: any) -> () } = {}
+
+local store: any
+-- ProfileStore session objects; `profiles` holds each one's Data table.
+local sessions: { [Player]: any } = {}
 local profiles: { [Player]: Profile } = {}
 local loadedCallbacks: { (Player, Profile) -> () } = {}
 
-local function deepCopy<T>(value: T): T
-	if type(value) ~= "table" then
-		return value
+-- Brings saved data up to the template's Version. Returns false for data
+-- saved by a newer server, which this one must not touch.
+local function migrate(data: any): boolean
+	local target = Config.Template.Version
+	if type(data.Version) ~= "number" or data.Version > target then
+		return false
 	end
-	local copy = {}
-	for key, child in value :: any do
-		copy[key] = deepCopy(child)
-	end
-	return copy :: any
-end
-
--- Adds any field the template has and `data` lacks, so profiles saved before
--- a field existed pick up its default.
-local function reconcile(data: { [any]: any }, template: { [any]: any })
-	for key, default in template do
-		if data[key] == nil then
-			data[key] = deepCopy(default)
-		elseif type(default) == "table" and type(data[key]) == "table" then
-			reconcile(data[key], default)
+	for version = data.Version, target - 1 do
+		local step = MIGRATIONS[version]
+		if step then
+			step(data)
 		end
+		data.Version = version + 1
 	end
+	return true
 end
 
 local function isCount(value: unknown): boolean
@@ -56,12 +59,43 @@ local function replicate(player: Player, profile: Profile)
 end
 
 local function load(player: Player)
-	if profiles[player] then
+	if sessions[player] then
 		return
 	end
 
-	local profile = {} :: any
-	reconcile(profile, Config.Template)
+	local session = store:StartSessionAsync(Config.KeyPrefix .. player.UserId, {
+		Cancel = function()
+			return player.Parent ~= Players
+		end,
+	})
+	if not session then
+		-- Only when the server is shutting down or another server raced us for the profile.
+		player:Kick("Your data could not be loaded. Please rejoin.")
+		return
+	end
+
+	session:AddUserId(player.UserId)
+	session:Reconcile()
+
+	if player.Parent ~= Players then
+		session:EndSession()
+		return
+	end
+	if not migrate(session.Data) then
+		warn(`DataService: {player.Name}'s data is Version {session.Data.Version}, newer than this server`)
+		session:EndSession()
+		player:Kick("Your data is from a newer version of the game. Please rejoin.")
+		return
+	end
+
+	session.OnSessionEnd:Connect(function()
+		sessions[player] = nil
+		profiles[player] = nil
+		player:Kick("Your data was loaded on another server. Please rejoin.")
+	end)
+
+	local profile = session.Data :: Profile
+	sessions[player] = session
 	profiles[player] = profile
 
 	replicate(player, profile)
@@ -73,7 +107,10 @@ local function load(player: Player)
 end
 
 local function release(player: Player)
-	profiles[player] = nil
+	local session = sessions[player]
+	if session then
+		session:EndSession()
+	end
 end
 
 -- The player's profile, or nil while it is loading or after they leave.
@@ -145,12 +182,15 @@ function DataService.RecordStack(player: Player, size: number): boolean
 end
 
 function DataService.Init()
-	-- Connected in Init so every profile for a player already in the server
-	-- exists before any service's Start runs.
+	local name = if RunService:IsStudio() then Config.StudioStoreName else Config.StoreName
+	store = ProfileStore.New(name, Config.Template)
+
+	-- Loading yields, so a profile is not ready when a player joins: use
+	-- OnProfileLoaded, or handle a nil GetProfile.
 	Players.PlayerAdded:Connect(load)
 	Players.PlayerRemoving:Connect(release)
 	for _, player in Players:GetPlayers() do
-		load(player)
+		task.spawn(load, player)
 	end
 end
 

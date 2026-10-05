@@ -55,7 +55,7 @@ Goal: reasons to keep playing past the first session.
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
-| M-02 | DataStore persistence with session locking and retries | meta | todo | M-01 | |
+| M-02 | DataStore persistence with session locking and retries | meta | review | M-01 | built on ProfileStore, vendored at `src/server/Vendor/ProfileStore.luau`. Live store `PlayerData`, Studio saves to `PlayerData_Studio`, key `Player_<UserId>`. `DataService` API unchanged, but profiles now load asynchronously: use `OnProfileLoaded` or handle a nil `GetProfile` |
 | M-03 | `UpgradeService` and cost curves | meta | todo | M-02 | |
 | M-04 | `RebirthService` | meta | todo | M-03 | |
 | M-05 | Global leaderboards (OrderedDataStore) | meta | todo | M-02 | |
@@ -91,6 +91,7 @@ Goal: reasons to keep playing past the first session.
 | 2026-10-05 | Scripts live in Rojo `src/`; map lives in the Studio place file | initial setup |
 | 2026-10-05 | Map is a tower: stacked floors, bank and safe zone in the lobby on floor 1. Flat meadow map removed | user |
 | 2026-10-05 | No open shaft. Players return from upper floors by a teleport pad to the lobby | user |
+| 2026-10-05 | Player data persists through ProfileStore, vendored as one file, no Wally | user |
 
 ## Blockers
 

@@ -2,8 +2,16 @@
 
 -- Player data (GDD 4.6, 4.7, 7).
 return table.freeze({
-	-- A new player's profile. Bump Version when a field changes meaning; a new
-	-- field only needs a default here, DataService fills it into older profiles.
+	-- DataStore that holds live player profiles. Renaming it abandons every save.
+	StoreName = "PlayerData",
+	-- Studio play sessions save here instead, so testing never touches live profiles.
+	StudioStoreName = "PlayerData_Studio",
+	-- Profile key is this prefix plus the UserId.
+	KeyPrefix = "Player_",
+
+	-- A new player's profile. A new field only needs a default here; it is
+	-- filled into older profiles on load. When a field changes meaning, bump
+	-- Version and add the matching step to MIGRATIONS in DataService.
 	Template = table.freeze({
 		Version = 1,
 		-- Spendable currency.
