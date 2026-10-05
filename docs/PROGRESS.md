@@ -18,8 +18,8 @@ Goal: the project boots with the agreed structure and a graybox map.
 | G-01 | Service/controller bootstrap in `init.server.luau` and `init.client.luau`; remove `Hello.luau` | gameplay | review | | `Shared.Loader` runs every module in `Services/` and `Controllers/`: all `Init()` first, then `Start()` |
 | G-02 | `Config` modules and `Remotes.luau` | gameplay | review | G-01 | Config: `Verity`, `Stack`, `Guardian`, `Drop`. Remotes live in `ReplicatedStorage.Remotes`. `Verity.PickupRadius` (6) is not in the GDD |
 | M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | todo | G-01 | |
-| B-01 | Graybox map meeting the map contract (GDD section 9) | builder | review | | built in Studio, needs saving; spawn regions carry `Band` and `Weight` attributes for G-03 |
-| B-08 | Tower map variant (`Workspace.MapTower`) to compare against the flat B-01 map | builder | review | | built in Studio, needs saving; tower is currently the live map for playtesting (flat map tags parked in a `ContractTag` attribute, its spawns disabled); G-03 was written against the flat map and needs a recheck if the tower wins |
+| B-01 | Graybox map meeting the map contract (GDD section 9) | builder | done | | flat meadow layout, superseded by the tower (B-08) and removed from the place |
+| B-08 | Tower graybox map, now `Workspace.Map` | builder | review | | chosen layout, needs saving in Studio; three floors `Zone1` to `Zone3`, four spawn regions per floor with `Weight` by area (no `Band`); gates carry `RequiredRebirths` and do not block yet; `ReturnPad` on floors 2 and 3 is unwired; GDD sections 4.3, 4.8 and 9 need updating |
 
 ## M1 — Core loop
 
@@ -88,6 +88,7 @@ Goal: reasons to keep playing past the first session.
 | Date | Decision | By |
 | --- | --- | --- |
 | 2026-10-05 | Scripts live in Rojo `src/`; map lives in the Studio place file | initial setup |
+| 2026-10-05 | Map is a tower: ring floors around an open shaft, bank and safe zone in the lobby at the bottom, jumping down the shaft to bank is allowed. Flat meadow map removed | user |
 
 ## Blockers
 
