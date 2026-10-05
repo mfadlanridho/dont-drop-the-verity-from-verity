@@ -21,8 +21,6 @@ local VerityOrb = require(Shared:WaitForChild("VerityOrb"))
 local STACK_FOLDER_NAME = "VerityStack"
 local TEMPLATE_WAIT_SECONDS = 10
 local HEAD_WAIT_SECONDS = 10
--- Studs.
-local BILLBOARD_SIZE = Vector2.new(5, 2)
 -- The spring is advanced in steps no longer than this, so it stays stable and
 -- keeps real time at low frame rates.
 local SPRING_STEP = 1 / 60
@@ -39,8 +37,9 @@ type Visual = {
 	codes: { string },
 	parts: { BasePart },
 	cframes: { CFrame },
-	billboard: BillboardGui,
-	label: TextLabel,
+	-- The count shown past the visual cap; nil if its Studio template is missing.
+	billboard: BillboardGui?,
+	label: TextLabel?,
 	-- Horizontal world position of the spring that the top of the stack follows.
 	tip: Vector3,
 	tipVelocity: Vector3,
@@ -54,6 +53,8 @@ local StackController = {}
 local templates: { [string]: Model } = {}
 -- Radius of a Normal stack orb; the column is laid out around it.
 local orbRadius = 0
+-- The count billboard, built in Studio at ReplicatedStorage.Assets.UI.StackCount.
+local countTemplate: BillboardGui?
 local visuals: { [Player]: Visual } = {}
 
 local function flatten(vector: Vector3): Vector3
@@ -102,21 +103,18 @@ local function createVisual(player: Player, head: BasePart): Visual
 	local folder = Instance.new("Folder")
 	folder.Name = STACK_FOLDER_NAME
 
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "Count"
-	billboard.Size = UDim2.fromScale(BILLBOARD_SIZE.X, BILLBOARD_SIZE.Y)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, orbRadius + BILLBOARD_SIZE.Y / 2, 0)
-	billboard.Enabled = false
-	billboard.Parent = folder
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.FredokaOne
-	label.TextScaled = true
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0
-	label.Parent = billboard
+	-- Sits just above the top orb. Its Size is in studs.
+	local billboard: BillboardGui? = nil
+	local label: TextLabel? = nil
+	if countTemplate then
+		local created = countTemplate:Clone()
+		created.Name = "Count"
+		created.StudsOffsetWorldSpace = Vector3.new(0, orbRadius + created.Size.Y.Scale / 2, 0)
+		created.Enabled = false
+		created.Parent = folder
+		billboard = created
+		label = created:FindFirstChild("Label") :: TextLabel?
+	end
 
 	-- Inside the character, so it is cleaned up with it on respawn.
 	folder.Parent = head.Parent
@@ -238,9 +236,13 @@ local function render(player: Player)
 	end
 
 	-- The count rides the top orb, so it sways with the stack.
-	visual.billboard.Adornee = visual.parts[#visual.parts] or head
-	visual.billboard.Enabled = size > Config.VisualCap
-	visual.label.Text = tostring(size)
+	if visual.billboard then
+		visual.billboard.Adornee = visual.parts[#visual.parts] or head
+		visual.billboard.Enabled = size > Config.VisualCap
+	end
+	if visual.label then
+		visual.label.Text = tostring(size)
+	end
 end
 
 local function onCharacter(player: Player, character: Model)
@@ -271,6 +273,14 @@ function StackController.Init()
 		orbRadius = (found.PrimaryPart :: BasePart).Size.Y / 2 * Config.OrbScale
 	else
 		warn("StackController: ReplicatedStorage.Assets.Verity is missing or has no PrimaryPart; stacks will show no orbs")
+	end
+
+	local ui = assets and assets:FindFirstChild("UI")
+	local count = ui and ui:FindFirstChild("StackCount")
+	if count and count:IsA("BillboardGui") then
+		countTemplate = count
+	else
+		warn("StackController: ReplicatedStorage.Assets.UI.StackCount is missing; capped stacks will show no count")
 	end
 end
 

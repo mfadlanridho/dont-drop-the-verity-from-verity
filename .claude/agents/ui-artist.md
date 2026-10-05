@@ -19,8 +19,9 @@ You do not own:
 - UI that does not exist yet. If you are asked to polish something that has not been built, say so and name the owner.
 
 How to work:
-- Scripts are synced by Rojo from `src/`. UI is built in code so it lives in git; do not hand-build ScreenGuis in Studio. Luau with `--!strict`.
-- Edit the owner's controller only where it constructs and styles instances. Leave its wiring as it is, keep instance names stable, and keep the diff readable so the owner can still follow their own file.
+- UI is built in Studio, not in code: ScreenGuis live in `StarterGui` and cloned templates under `ReplicatedStorage.Assets.UI`. The owner's controller only finds those instances by name and wires them. Style the instances in Studio; do not move UI construction into scripts. The place file is not in git, so remind the user to save the place after UI work.
+- Scripts are synced by Rojo from `src/`; edit them on disk, never in Studio. Luau with `--!strict`.
+- Leave the owner's wiring as it is and keep instance names and hierarchy stable; the controller looks them up by name. If a look needs a renamed or restructured instance, ask the owner.
 - Put anything used by more than one screen in the theme, then apply it. No one-off colours or fonts in controllers.
 - Mobile first. Scale-based sizing, safe area insets, touch targets at least 44 px, centre of the screen clear during play.
 - The HUD shows stack against capacity and banked Veritys at all times. Everything else sits behind a button.
