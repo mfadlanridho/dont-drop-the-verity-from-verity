@@ -48,4 +48,12 @@ return table.freeze({
 	IdleSway = 0.35,
 	-- Idle sway speed, in radians per second.
 	IdleSwaySpeed = 1.5,
+
+	-- Carry animation, played on a character while its stack is above zero.
+	-- Asset id of the published animation, e.g. "rbxassetid://123". While it
+	-- is empty the animation only plays in Studio, straight from the
+	-- KeyframeSequence at ReplicatedStorage.Assets.Animations.Carry.
+	CarryAnimationId = "",
+	-- Seconds to blend the arms in and out.
+	CarryFadeSeconds = 0.25,
 })
