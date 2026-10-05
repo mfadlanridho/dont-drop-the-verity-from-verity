@@ -1,9 +1,9 @@
 --!strict
 
 -- Shows the local player's load (weight against capacity), what the stack
--- would bank for, a warning while a Verity in reach is too heavy to fit, and
--- the return pad countdown. Every value is a Player attribute the server keeps
--- current; this only draws them. Plain on purpose: the ui-artist styles it
+-- would bank for, how much the load slows them, a warning while a Verity in
+-- reach is too heavy to fit, a note when the stack is banked, and the return
+-- pad countdown. Every value comes from the server; this only draws them. Plain on purpose: the ui-artist styles it
 -- later, so keep the instance names stable.
 
 local Players = game:GetService("Players")
@@ -15,7 +15,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"):WaitForChild("Stack"))
 local ReturnConfig = require(Shared.Config:WaitForChild("ReturnPad"))
 local Format = require(Shared:WaitForChild("Format"))
+local Remotes = require(Shared:WaitForChild("Remotes"))
 
+-- Seconds the "Banked +n" note stays up.
+local BANKED_NOTE_SECONDS = 2
 local FILL_COLOR = Color3.fromRGB(255, 221, 51)
 local REFUSED_COLOR = Color3.fromRGB(230, 70, 70)
 
@@ -26,7 +29,11 @@ local StackHudController = {}
 local fill: Frame
 local amount: TextLabel
 local value: TextLabel
+local speed: TextLabel
 local tooHeavy: TextLabel
+local banked: TextLabel
+-- Counts banked notes so an older one's timer does not hide a newer note.
+local bankedNote = 0
 local returnFrame: Frame
 local countdown: TextLabel
 
@@ -44,7 +51,22 @@ local function updateLoad()
 	fill.BackgroundColor3 = if refused then REFUSED_COLOR else FILL_COLOR
 	amount.Text = `{Format.Number(weight)} / {Format.Number(capacity)}`
 	value.Text = `Carrying: {Format.Number(number(Config.ValueAttribute))}`
+	-- Share of walk speed left after the load's penalty, as StackService applies it.
+	local penalty = math.min(weight * Config.SpeedPenaltyPerWeight, Config.MaxSpeedPenalty)
+	speed.Text = `Speed: {math.floor((1 - penalty) * 100 + 0.5)}%`
 	tooHeavy.Visible = refused
+end
+
+local function showBanked(amount: number)
+	bankedNote += 1
+	local note = bankedNote
+	banked.Text = `Banked +{Format.Number(amount)}`
+	banked.Visible = true
+	task.delay(BANKED_NOTE_SECONDS, function()
+		if bankedNote == note then
+			banked.Visible = false
+		end
+	end)
 end
 
 local function updateReturn()
@@ -108,9 +130,24 @@ function StackHudController.Init()
 	amount.ZIndex = 2
 
 	value = label("Value", load, 18)
-	value.AnchorPoint = Vector2.new(0.5, 1)
-	value.Position = UDim2.new(0.5, 0, 0, -4)
-	value.Size = UDim2.new(1, 0, 0, 22)
+	value.AnchorPoint = Vector2.new(0, 1)
+	value.Position = UDim2.new(0, 0, 0, -4)
+	value.Size = UDim2.new(0.6, 0, 0, 22)
+	value.TextXAlignment = Enum.TextXAlignment.Left
+
+	speed = label("Speed", load, 18)
+	speed.AnchorPoint = Vector2.new(1, 1)
+	speed.Position = UDim2.new(1, 0, 0, -4)
+	speed.Size = UDim2.new(0.4, 0, 0, 22)
+	speed.TextXAlignment = Enum.TextXAlignment.Right
+
+	-- Shares the slot above with TooHeavy; a stack that was just banked is
+	-- empty, so the two do not show together for long.
+	banked = label("Banked", load, 20)
+	banked.AnchorPoint = Vector2.new(0.5, 1)
+	banked.Position = UDim2.new(0.5, 0, 0, -52)
+	banked.Size = UDim2.new(1, 0, 0, 24)
+	banked.Visible = false
 
 	tooHeavy = label("TooHeavy", load, 20)
 	tooHeavy.AnchorPoint = Vector2.new(0.5, 1)
@@ -139,6 +176,7 @@ function StackHudController.Start()
 		player:GetAttributeChangedSignal(attribute):Connect(updateLoad)
 	end
 	updateLoad()
+	Remotes.StackBanked.OnClientEvent:Connect(showBanked)
 
 	-- The countdown ticks between attribute changes, so it is redrawn each frame.
 	RunService.RenderStepped:Connect(updateReturn)

@@ -49,6 +49,9 @@ return {
 	GuardianHunt = event("GuardianHunt"),
 	-- Server -> hit client. (dropped: number) after a Guardian hit spills part of their stack.
 	StackDropped = event("StackDropped"),
+	-- Server -> banking client. (value: number, count: number) after their stack is banked:
+	-- the banked Veritys credited and how many Veritys the stack held.
+	StackBanked = event("StackBanked"),
 	-- Client -> server. (upgradeId: string) -> (bought: boolean, reason: string?). Buys one
 	-- level at the server's price. Reasons: "Invalid", "NotLoaded", "MaxLevel", "CannotAfford", "TooFast".
 	BuyUpgrade = func("BuyUpgrade"),
