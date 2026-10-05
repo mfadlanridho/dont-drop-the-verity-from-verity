@@ -11,7 +11,7 @@ return table.freeze({
 		Capacity = table.freeze({ BaseCost = 10, CostGrowth = 1.22, MaxLevel = 40 }),
 		Speed = table.freeze({ BaseCost = 25, CostGrowth = 1.45, MaxLevel = 10 }),
 		Magnet = table.freeze({ BaseCost = 20, CostGrowth = 1.45, MaxLevel = 10 }),
-		Multiplier = table.freeze({ BaseCost = 40, CostGrowth = 1.6, MaxLevel = 9 }),
+		Multiplier = table.freeze({ BaseCost = 50, CostGrowth = 2, MaxLevel = 9 }),
 	}),
 
 	-- Display order in the shop.

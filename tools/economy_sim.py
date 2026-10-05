@@ -19,22 +19,28 @@ UPGRADES = {
     "Capacity": (10, 1.22, 40),
     "Speed": (25, 1.45, 10),
     "Magnet": (20, 1.45, 10),
-    "Multiplier": (40, 1.60, 9),
+    "Multiplier": (50, 2.00, 9),
 }
-REBIRTH_BASE_COST = 1000
-REBIRTH_COST_GROWTH = 2.0
+REBIRTH_BASE_COST = 1200
+REBIRTH_COST_GROWTH = 5.0
 REBIRTH_BANK_BONUS = 0.5  # GDD 4.7: +50% banked per rebirth
 
 BASE_CAPACITY, CAPACITY_PER_LEVEL = 10, 5
 BASE_SPEED, SPEED_PER_LEVEL = 16, 1
-PENALTY_PER_VERITY, MAX_PENALTY = 0.01, 0.4
+PENALTY_PER_WEIGHT, MAX_PENALTY = 0.01, 0.4
 BASE_RADIUS, RADIUS_PER_LEVEL = 6, 2
 MULTIPLIER_PER_LEVEL = 1
+# Zone a player farms at each rebirth count (GDD 4.8), and the average value
+# and weight of a pickup there: Zone1 Normal; Zone2 Normal and Golden, even
+# split; Zone3 Golden and Corrupted, even split.
+ZONE_UNLOCK_REBIRTHS = (0, 1, 3)
+ZONE_PICKUP = ((1, 1), (3, 2), (15, 6.5))  # (value, weight)
 
 # --- Map assumptions (not measured) --------------------------------------
 PICKUP_SPACING = 30   # studs between neighbouring pickups on a collecting route
 MIN_STEP = 4          # studs walked per pickup however large the magnet is
-TRAVEL_ONE_WAY = 100  # studs between the bank and the pickups
+TRAVEL_ONE_WAY = 100  # studs between the bank and the pickups, per floor climbed
+RETURN_PAD = 8        # seconds from an upper floor back to the bank by return pad
 OVERHEAD = 5          # seconds per trip spent banking and shopping
 REFILL_PER_SECOND = 2 # zone refill; a solo player cannot collect faster
 
@@ -62,17 +68,22 @@ def trip(levels, rebirths):
     capacity = BASE_CAPACITY + levels["Capacity"] * CAPACITY_PER_LEVEL
     speed = BASE_SPEED + levels["Speed"] * SPEED_PER_LEVEL
     radius = BASE_RADIUS + levels["Magnet"] * RADIUS_PER_LEVEL
-    per_pickup = 1 + levels["Multiplier"] * MULTIPLIER_PER_LEVEL
+    multiplier = 1 + levels["Multiplier"] * MULTIPLIER_PER_LEVEL
+    zone = sum(1 for needed in ZONE_UNLOCK_REBIRTHS if rebirths >= needed)
+    value, weight = ZONE_PICKUP[zone - 1]
 
-    pickups = math.ceil(capacity / per_pickup)
+    # Capacity is a weight limit; a pickup that does not fit is left behind.
+    pickups = math.floor(capacity / weight)
+    carried = pickups * weight
     step = max(PICKUP_SPACING - radius, MIN_STEP)
-    full_penalty = min(capacity * PENALTY_PER_VERITY, MAX_PENALTY)
+    full_penalty = min(carried * PENALTY_PER_WEIGHT, MAX_PENALTY)
     # The stack grows while collecting, so the average penalty is half the final one.
     collect = pickups * step / (speed * (1 - full_penalty / 2))
     collect = max(collect, pickups / REFILL_PER_SECOND)
-    out = TRAVEL_ONE_WAY / speed
-    back = TRAVEL_ONE_WAY / (speed * (1 - full_penalty))
-    banked = math.floor(capacity * (1 + REBIRTH_BANK_BONUS * rebirths))
+    out = TRAVEL_ONE_WAY * zone / speed
+    back = TRAVEL_ONE_WAY / (speed * (1 - full_penalty)) if zone == 1 else RETURN_PAD
+    # Multiplier and the rebirth bonus both scale banked value, not weight.
+    banked = math.floor(pickups * value * multiplier * (1 + REBIRTH_BANK_BONUS * rebirths))
     return collect + out + back + OVERHEAD, banked
 
 
@@ -101,7 +112,8 @@ def simulate(rebirth_goal=3, verbose=True):
             levels = {name: 0 for name in UPGRADES}
             continue
 
-        # Buy whatever pays for itself before the rebirth would be reached anyway.
+        # Buy the affordable upgrade that pays for itself soonest, as long as it
+        # does so before the rebirth would be reached anyway.
         while True:
             now = rate(levels, rebirths)
             time_left = (goal - banked) / now
@@ -110,6 +122,8 @@ def simulate(rebirth_goal=3, verbose=True):
                 if levels[name] >= cap:
                     continue
                 price = cost(name, levels[name])
+                if price > banked:
+                    continue
                 trial = dict(levels, **{name: levels[name] + 1})
                 gain = rate(trial, rebirths) - now
                 if gain <= 0:
@@ -117,7 +131,7 @@ def simulate(rebirth_goal=3, verbose=True):
                 payback = price / gain
                 if payback < time_left and (best is None or payback < best_payback):
                     best, best_payback = name, payback
-            if best is None or cost(best, levels[best]) > banked:
+            if best is None:
                 break
             banked -= cost(best, levels[best])
             levels[best] += 1
