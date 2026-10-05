@@ -3,12 +3,12 @@
 -- Banks a player's whole stack when their character enters a BankZone
 -- (GDD 4.3): the stack's value becomes banked Veritys and the stack empties.
 
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Region = require(Shared.Region)
 local Remotes = require(Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local StackService = require(script.Parent.StackService)
@@ -18,17 +18,6 @@ local ZONE_TAG = "BankZone"
 local BankService = {}
 
 local zones: { BasePart } = {}
-
-local function isInZone(position: Vector3): boolean
-	for _, zone in zones do
-		local offset = zone.CFrame:PointToObjectSpace(position)
-		local half = zone.Size / 2
-		if math.abs(offset.X) <= half.X and math.abs(offset.Y) <= half.Y and math.abs(offset.Z) <= half.Z then
-			return true
-		end
-	end
-	return false
-end
 
 local function livingRoot(player: Player): BasePart?
 	local character = player.Character
@@ -60,18 +49,14 @@ local function step()
 			continue
 		end
 		local root = livingRoot(player)
-		if root and isInZone(root.Position) then
+		if root and Region.Contains(zones, root.Position) then
 			bank(player)
 		end
 	end
 end
 
 function BankService.Init()
-	for _, zone in CollectionService:GetTagged(ZONE_TAG) do
-		if zone:IsA("BasePart") then
-			table.insert(zones, zone)
-		end
-	end
+	zones = Region.Tagged(ZONE_TAG)
 	if #zones == 0 then
 		warn(`BankService: no part tagged {ZONE_TAG}; stacks cannot be banked`)
 	end

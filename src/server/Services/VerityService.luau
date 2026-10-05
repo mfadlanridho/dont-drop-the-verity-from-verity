@@ -32,7 +32,9 @@ local VerityService = {}
 
 local rng = Random.new()
 local zones: { Zone } = {}
-local live: { [Instance]: { zone: Zone, tier: Types.VerityTier } } = {}
+-- `zone` is nil for a dropped pickup, which counts toward no zone's cap.
+-- `armedAt` is the os.clock() time from which it can be collected.
+local live: { [Instance]: { zone: Zone?, tier: Types.VerityTier, armedAt: number } } = {}
 local pickupFolder: Folder
 -- One ready-made orb per tier, cloned for each spawn.
 local templates: { [Types.VerityTier]: Model } = {}
@@ -92,20 +94,16 @@ local function release(pickup: Instance)
 	local record = live[pickup]
 	if record then
 		live[pickup] = nil
-		record.zone.count -= 1
+		if record.zone then
+			record.zone.count -= 1
+		end
 	end
 end
 
-local function spawnPickup(zone: Zone): boolean
-	local point = findSpawnPoint(zone)
-	if not point then
-		return false
-	end
-
-	local tier = zone.tiers[rng:NextInteger(1, #zone.tiers)]
+local function createPickup(tier: Types.VerityTier, point: Vector3, zone: Zone?, armDelay: number): Model?
 	local template = templates[tier]
 	if not template then
-		return false
+		return nil
 	end
 
 	local pickup = template:Clone()
@@ -116,12 +114,23 @@ local function spawnPickup(zone: Zone): boolean
 	pickup.Parent = pickupFolder
 	CollectionService:AddTag(pickup, Config.PickupTag)
 
-	live[pickup] = { zone = zone, tier = tier }
-	zone.count += 1
+	live[pickup] = { zone = zone, tier = tier, armedAt = os.clock() + armDelay }
+	if zone then
+		zone.count += 1
+	end
 	pickup.Destroying:Once(function()
 		release(pickup)
 	end)
-	return true
+	return pickup
+end
+
+local function spawnPickup(zone: Zone): boolean
+	local point = findSpawnPoint(zone)
+	if not point then
+		return false
+	end
+	local tier = zone.tiers[rng:NextInteger(1, #zone.tiers)]
+	return createPickup(tier, point, zone, 0) ~= nil
 end
 
 local function refill(zone: Zone, dt: number)
@@ -139,11 +148,29 @@ local function refill(zone: Zone, dt: number)
 	end
 end
 
--- The tier of a live pickup, or nil if it is not one (already collected, or
--- never a pickup).
+-- The tier of a pickup that can be collected right now, or nil if it cannot
+-- (already collected, never a pickup, or a dropped one that is not armed yet).
 function VerityService.GetTier(pickup: Instance): Types.VerityTier?
 	local record = live[pickup]
-	return record and record.tier
+	if not record or os.clock() < record.armedAt then
+		return nil
+	end
+	return record.tier
+end
+
+-- Puts a pickup of `tier` at `point` (the orb's centre) outside any zone's
+-- cap. It cannot be collected for `armDelay` seconds and despawns after
+-- `lifetime` seconds if nobody takes it.
+function VerityService.SpawnDropped(tier: Types.VerityTier, point: Vector3, armDelay: number, lifetime: number)
+	local pickup = createPickup(tier, point, nil, armDelay)
+	if pickup then
+		pickup:SetAttribute("Dropped", true)
+		task.delay(lifetime, function()
+			if live[pickup] then
+				pickup:Destroy()
+			end
+		end)
+	end
 end
 
 -- Removes a live pickup from the world and returns its tier, or nil if it is
@@ -151,7 +178,7 @@ end
 -- allowed to collect it.
 function VerityService.Collect(pickup: Instance): Types.VerityTier?
 	local record = live[pickup]
-	if not record then
+	if not record or os.clock() < record.armedAt then
 		return nil
 	end
 	release(pickup)

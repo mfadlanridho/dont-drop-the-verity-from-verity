@@ -47,11 +47,11 @@ Goal: the risk half of the loop.
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
-| G-07 | `GuardianService`: state machine, targeting, pathfinding | gameplay | todo | G-04 | |
-| G-08 | Hit handling: drop, scatter pickups, immunity | gameplay | todo | G-07 | |
-| G-09 | Safe zone exclusion | gameplay | todo | G-07 | |
+| G-07 | `GuardianService`: state machine, targeting, pathfinding | gameplay | review | G-04 | one Guardian per `GuardianSpawn`, in `Workspace.Guardians`, attributes `Zone` and `State`. Hunts the heaviest stack on its floor (min weight 5), 1.5 s telegraph, paths with PathfindingService and heads straight for a target with no path. Floors 2 and 3 are faster (`Config.Guardian.Zones`). Stand-in model is a giant Corrupted orb until B-03 puts a `Guardian` model in `ServerStorage.Assets` |
+| G-08 | Hit handling: drop, scatter pickups, immunity | gameplay | review | G-07 | `DropService.Drop(player)` drops the whole stack (user decision), scatters up to 40 pickups 8 to 14 studs away through `VerityService.SpawnDropped` (attribute `Dropped`, not collectable for 0.75 s, gone after 10 s), 3 s immunity, fires `Remotes.StackDropped(count)` |
+| G-09 | Safe zone exclusion | gameplay | review | G-07 | players in a `SafeZone` are never targeted and entering one ends the chase; the Guardian paths around safe zones (a PathfindingModifier is added to each at runtime) and never steps into one |
 | B-03 | Guardian model and rig | builder | todo | | |
-| G-14 | Working hunted warning for the targeted player | gameplay | todo | G-07 | plain, fully wired |
+| G-14 | Working hunted warning for the targeted player | gameplay | review | G-07 | `HuntedController` builds `PlayerGui.HuntedHud`: `Warning` while hunted (from `Remotes.GuardianHunt`) and `Dropped` for 3 s after a hit. Plain, for U-02 to add the audio cue and screen effect |
 | U-02 | Hunted warning polish: audio cue and screen effect | ui-artist | todo | G-14 | |
 | Q-02 | Playtest Guardian fairness with 1 and 3+ players | qa | todo | G-08, G-14 | |
 
@@ -102,6 +102,7 @@ Goal: reasons to keep playing past the first session.
 | 2026-10-05 | Ramps between floors are curved and inside the tower, one per floor in alternating corners; the outside ramps are removed | user |
 | 2026-10-05 | Player data persists through ProfileStore, vendored as one file, no Wally | user |
 | 2026-10-05 | Veritys have a weight separate from their value: Normal 1/1, Golden 5/3, Corrupted 25/10 (value/weight). Capacity and slowdown count weight, the bank counts value, and a Verity that does not fit stays on the ground. Multiplier multiplies banked value only | user |
+| 2026-10-05 | A Guardian hit drops the whole stack, not half. The Veritys scatter as pickups the player can try to grab back | user |
 | 2026-10-05 | Balance belongs to the meta agent, which directly edits the economy values in `Config.Verity` and `Config.Stack` (listed in the agent briefs). The user sets pacing targets, qa measures them, gameplay keeps the feel values | user |
 | 2026-10-05 | System owners build and wire their own UI. The UI agent is a UI artist (`ui-artist`) who only polishes working UI | user |
 

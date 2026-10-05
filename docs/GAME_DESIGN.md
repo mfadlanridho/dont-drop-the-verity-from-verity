@@ -61,15 +61,17 @@ All numbers below are starting values and live in `src/shared/Config` so they ca
 
 - One Guardian per zone. A large corrupted Verity.
 - States: `Idle` → `Hunting` → `Chasing` → `Attacking` → `Cooldown`.
-- Targeting **[ASSUMED]**: the player with the tallest stack outside the safe zone, with a minimum stack of 5 so brand-new players are left alone. Re-evaluates every few seconds.
+- Each Guardian stays on its own floor and only hunts players on it.
+- Targeting **[ASSUMED]**: the player carrying the heaviest stack on its floor and outside the safe zone, with a minimum weight of 5 so brand-new players are left alone. While idle it looks for a target every few seconds; once it has one it keeps that target until the chase ends.
 - Speed: slightly faster than an unburdened player (start: 18 vs 16), so a loaded player cannot outrun it in a straight line and has to use the map or bank early.
-- Chase leash: gives up after 12 seconds, then a 6 second cooldown.
-- Telegraph: audio cue and screen effect for the targeted player when a chase starts. Being hunted must never feel like a surprise.
+- Chase leash: gives up after 12 seconds, then a 6 second cooldown. A chase also ends at once if the target enters the safe zone, banks, dies or leaves the floor.
+- Telegraph: the Guardian stands still for 1.5 seconds after picking a target, and the target gets a warning (audio cue and screen effect) for the whole hunt. Being hunted must never feel like a surprise.
+- It paths around the safe zone and never enters it.
 
 ### 4.5 Dropping
 
-- A Guardian hit drops 50% of the stack, rounded up **[ASSUMED]**. Whether that is half the Veritys or half the weight is open (section 10).
-- Dropped Veritys scatter around the player as pickups that anyone can collect, and despawn after 10 seconds.
+- A Guardian hit drops the whole stack.
+- Dropped Veritys scatter in a ring around the player as pickups that anyone can collect, including the player who dropped them, and despawn after 10 seconds. They cannot be collected for the first 0.75 seconds. At most 40 are scattered per hit; the rest of a larger stack is lost.
 - The hit player gets 3 seconds of immunity so they cannot be chain-hit.
 - No player-versus-player knocking in v1.
 
@@ -168,8 +170,6 @@ The builder provides these; the gameplay code looks them up:
 
 ## 10. Open decisions
 
-1. **Drop amount on hit** — 50% assumed. Alternatives: full stack, or a fixed number.
-2. **Banking** — bank zone assumed. Alternative: stack counts permanently on pickup, and the Guardian only removes un-upgraded progress.
-3. **Guardian targeting** — tallest stack assumed. Alternative: nearest player.
-4. **Drop on a tiered stack** — with tiers of different weight, "drop 50%" can mean half the Veritys from the top of the stack, or half the weight.
-5. **IP** — Verity is ThatMob's character. Build original models and audio rather than reusing ripped assets, and decide whether the title uses the name as-is.
+1. **Banking** — bank zone assumed. Alternative: stack counts permanently on pickup, and the Guardian only removes un-upgraded progress.
+2. **Guardian targeting** — heaviest stack assumed. Alternatives: most Veritys, most value, or nearest player.
+3. **IP** — Verity is ThatMob's character. Build original models and audio rather than reusing ripped assets, and decide whether the title uses the name as-is.
