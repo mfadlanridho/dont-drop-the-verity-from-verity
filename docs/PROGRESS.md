@@ -3,7 +3,9 @@
 Owned by the lead (the main Claude session), who plans, dispatches the agents and verifies their work. Design reference: [GAME_DESIGN.md](GAME_DESIGN.md).
 
 Status values: `todo`, `doing`, `review`, `done`, `blocked`.
-Task IDs: `G` gameplay, `B` builder, `M` meta, `U` ui, `Q` qa, `P` lead.
+Task IDs: `G` gameplay, `B` builder, `M` meta, `U` ui-artist, `Q` qa, `P` lead.
+
+UI split: the agent that owns a system builds and wires that system's UI. The `ui-artist` only polishes UI that already works.
 
 **Current milestone:** M0 Foundation
 **Last updated:** 2026-10-05
@@ -33,9 +35,11 @@ Goal: collect, stack, bank. Playable without the Guardian.
 | G-06 | `BankService`: bank zone converts stack to banked Veritys | gameplay | todo | G-04, M-01 | |
 | G-11 | `ReturnPadService`: return pads send the character to the lobby | gameplay | review | B-08 | staying on a `ReturnPad` for `Config.ReturnPad.ChannelSeconds` (1.5, user to confirm; 0 = instant) moves the character to `ReturnTarget`; stack untouched; player attribute `ReturnAt` holds the server time the teleport fires, for a UI countdown |
 | G-12 | Carry animation while holding a stack | gameplay | review | G-04 | `CarryController` plays it on the local character while `Stack` > 0, arms only, over walk and idle. Published as group asset 103959159779590 (`Config.Stack.CarryAnimationId`) by `tools/carry_animation.py` through Open Cloud; the key is in the untracked `.env`. A preview copy of the keyframes is at `ReplicatedStorage.Assets.Animations.Carry` in the place, rebuilt by `tools/build_carry_animation.luau`. R15 only |
-| U-01 | HUD: stack count / capacity, banked Veritys | ui | todo | G-04 | |
+| G-13 | Working HUD: stack count / capacity, return pad countdown | gameplay | todo | G-04, G-11 | plain, fully wired |
+| M-09 | Working HUD: banked Veritys | meta | todo | M-01 | plain, fully wired; reads the `Banked` attribute |
+| U-01 | HUD polish; sets up the shared theme in `src/client/UI/` | ui-artist | todo | G-13, M-09 | look only, no logic changes |
 | B-02 | Verity orb model | builder | review | | `ReplicatedStorage.Assets.Verity`: Model with PrimaryPart `Orb` (2 stud ball, no collision, massless) and decal `Face` on the Front face, pivot at the centre facing -Z; needs saving in Studio. Open: a 30-orb stack is 60 studs against 36 studs of floor headroom; face image ownership and GDD open decision 4 |
-| Q-01 | Playtest M1 loop, report trip time and feel | qa | todo | G-06, U-01 | |
+| Q-01 | Playtest M1 loop, report trip time and feel | qa | todo | G-06, G-13, M-09 | |
 
 ## M2 — Guardian
 
@@ -47,8 +51,9 @@ Goal: the risk half of the loop.
 | G-08 | Hit handling: drop, scatter pickups, immunity | gameplay | todo | G-07 | |
 | G-09 | Safe zone exclusion | gameplay | todo | G-07 | |
 | B-03 | Guardian model and rig | builder | todo | | |
-| U-02 | Hunted warning: audio cue and screen effect | ui | todo | G-07 | |
-| Q-02 | Playtest Guardian fairness with 1 and 3+ players | qa | todo | G-08, U-02 | |
+| G-14 | Working hunted warning for the targeted player | gameplay | todo | G-07 | plain, fully wired |
+| U-02 | Hunted warning polish: audio cue and screen effect | ui-artist | todo | G-14 | |
+| Q-02 | Playtest Guardian fairness with 1 and 3+ players | qa | todo | G-08, G-14 | |
 
 ## M3 — Meta
 
@@ -60,7 +65,8 @@ Goal: reasons to keep playing past the first session.
 | M-03 | `UpgradeService` and cost curves | meta | todo | M-02 | |
 | M-04 | `RebirthService` | meta | todo | M-03 | |
 | M-05 | Global leaderboards (OrderedDataStore) | meta | todo | M-02 | |
-| U-03 | Shop and rebirth UI | ui | todo | M-03 | |
+| M-10 | Working shop and rebirth UI | meta | todo | M-03, M-04 | plain, fully wired |
+| U-03 | Shop and rebirth UI polish | ui-artist | todo | M-10 | |
 | B-04 | Shop and leaderboard props at spawn | builder | todo | | |
 | Q-03 | Economy pacing check: time to first rebirth | qa | todo | M-04 | target 20 to 30 min |
 
@@ -73,14 +79,15 @@ Goal: reasons to keep playing past the first session.
 | G-10 | Zone unlock gating and pickup tiers | gameplay | todo | M-04, B-06 | |
 | M-06 | Pets and eggs | meta | todo | M-03 | |
 | M-07 | Daily and playtime rewards | meta | todo | M-02 | |
-| U-04 | Juice: pickup pop, bank burst, smile stages, SFX | ui | todo | | |
+| U-04 | Juice: pickup pop, bank burst, smile stages, SFX | ui-artist | todo | U-01 | presentational only |
 
 ## M5 — Monetization and launch
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
 | M-08 | Gamepasses and developer products, including Save My Stack | meta | todo | G-08 | |
-| U-05 | Store UI and purchase prompts | ui | todo | M-08 | |
+| M-11 | Working store UI and purchase prompts | meta | todo | M-08 | plain, fully wired |
+| U-05 | Store UI polish | ui-artist | todo | M-11 | |
 | Q-04 | Exploit pass on every remote | qa | todo | | |
 | Q-05 | Full playtest, mobile and PC | qa | todo | | |
 | B-07 | Icon and thumbnail scenes | builder | todo | | |
@@ -93,6 +100,7 @@ Goal: reasons to keep playing past the first session.
 | 2026-10-05 | Map is a tower: stacked floors, bank and safe zone in the lobby on floor 1. Flat meadow map removed | user |
 | 2026-10-05 | No open shaft. Players return from upper floors by a teleport pad to the lobby | user |
 | 2026-10-05 | Player data persists through ProfileStore, vendored as one file, no Wally | user |
+| 2026-10-05 | System owners build and wire their own UI. The UI agent is a UI artist (`ui-artist`) who only polishes working UI | user |
 
 ## Blockers
 
