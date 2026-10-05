@@ -40,8 +40,7 @@ local function event(name: string): RemoteEvent
 	return get("RemoteEvent", name) :: RemoteEvent
 end
 
--- No RemoteFunctions yet; kept so adding one is a single line below.
-local function _func(name: string): RemoteFunction
+local function func(name: string): RemoteFunction
 	return get("RemoteFunction", name) :: RemoteFunction
 end
 
@@ -50,4 +49,7 @@ return {
 	GuardianHunt = event("GuardianHunt"),
 	-- Server -> hit client. (dropped: number) after a Guardian hit spills part of their stack.
 	StackDropped = event("StackDropped"),
+	-- Client -> server. (upgradeId: string) -> (bought: boolean, reason: string?). Buys one
+	-- level at the server's price. Reasons: "Invalid", "NotLoaded", "MaxLevel", "CannotAfford", "TooFast".
+	BuyUpgrade = func("BuyUpgrade"),
 }

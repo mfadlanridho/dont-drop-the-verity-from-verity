@@ -36,7 +36,7 @@ Goal: collect, stack, bank. Playable without the Guardian.
 | G-11 | `ReturnPadService`: return pads send the character to the lobby | gameplay | review | B-08 | staying on a `ReturnPad` for `Config.ReturnPad.ChannelSeconds` (1.5, user to confirm; 0 = instant) moves the character to `ReturnTarget`; stack untouched; player attribute `ReturnAt` holds the server time the teleport fires, for a UI countdown |
 | G-12 | Carry animation while holding a stack | gameplay | review | G-04 | `CarryController` plays it on the local character while `Stack` > 0, arms only, over walk and idle. Published as group asset 103959159779590 (`Config.Stack.CarryAnimationId`) by `tools/carry_animation.py` through Open Cloud; the key is in the untracked `.env`. A preview copy of the keyframes is at `ReplicatedStorage.Assets.Animations.Carry` in the place, rebuilt by `tools/build_carry_animation.luau`. R15 only |
 | G-13 | Working HUD: stack count / capacity, return pad countdown | gameplay | todo | G-04, G-11 | plain, fully wired |
-| M-09 | Working HUD: banked Veritys | meta | todo | M-01 | plain, fully wired; reads the `Banked` attribute |
+| M-09 | Working HUD: banked Veritys | meta | review | M-01 | `BankedHudController` builds `PlayerGui.BankedHud.Banked.Amount`, left edge, vertically centred; reads the `Banked` attribute. `Shared.Format.Number` abbreviates numbers (1.25K) for any UI |
 | U-01 | HUD polish; sets up the shared theme in `src/client/UI/` | ui-artist | todo | G-13, M-09 | look only, no logic changes |
 | B-02 | Verity orb model | builder | review | | `ReplicatedStorage.Assets.Verity`: Model with PrimaryPart `Orb` (2 stud ball, no collision, massless) and decal `Face` on the Front face, pivot at the centre facing -Z; needs saving in Studio. Open: a 30-orb stack is 60 studs against 36 studs of floor headroom; face image ownership and GDD open decision 4 |
 | Q-01 | Playtest M1 loop, report trip time and feel | qa | todo | G-06, G-13, M-09 | |
@@ -62,7 +62,7 @@ Goal: reasons to keep playing past the first session.
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
 | M-02 | DataStore persistence with session locking and retries | meta | review | M-01 | built on ProfileStore, vendored at `src/server/Vendor/ProfileStore.luau`. Live store `PlayerData`, Studio saves to `PlayerData_Studio`, key `Player_<UserId>`. `DataService` API unchanged, but profiles now load asynchronously: use `OnProfileLoaded` or handle a nil `GetProfile` |
-| M-03 | `UpgradeService` and cost curves | meta | todo | M-02 | |
+| M-03 | `UpgradeService` and cost curves | meta | review | M-02 | prices in `Config.Upgrades`, formula in `Shared.Economy.UpgradeCost`. RemoteFunction `BuyUpgrade(upgradeId)` returns `(bought, reason)`. Curves tuned in `tools/economy_sim.py` on guessed map timings: first upgrade 0.6 min, first rebirth 24.5 min at a rebirth cost of 1000 (M-04); retune after Q-01. Open: Speed level 3 and up outruns the Guardian (18) when unloaded; Multiplier fills the stack faster but does not raise what a trip banks |
 | M-04 | `RebirthService` | meta | todo | M-03 | |
 | M-05 | Global leaderboards (OrderedDataStore) | meta | todo | M-02 | |
 | M-10 | Working shop and rebirth UI | meta | todo | M-03, M-04 | plain, fully wired |
