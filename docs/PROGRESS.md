@@ -1,9 +1,9 @@
 # Progress Tracker
 
-Owned by the `lead-pm` agent. Design reference: [GAME_DESIGN.md](GAME_DESIGN.md).
+Owned by the lead (the main Claude session), who plans, dispatches the agents and verifies their work. Design reference: [GAME_DESIGN.md](GAME_DESIGN.md).
 
 Status values: `todo`, `doing`, `review`, `done`, `blocked`.
-Task IDs: `G` gameplay, `B` builder, `M` meta, `U` ui, `Q` qa, `P` pm.
+Task IDs: `G` gameplay, `B` builder, `M` meta, `U` ui, `Q` qa, `P` lead.
 
 **Current milestone:** M0 Foundation
 **Last updated:** 2026-10-05
@@ -14,11 +14,11 @@ Goal: the project boots with the agreed structure and a graybox map.
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P-01 | Resolve open decisions in GAME_DESIGN.md section 10 | lead-pm | todo | | needs the user |
+| P-01 | Resolve open decisions in GAME_DESIGN.md section 10 | lead | todo | | needs the user |
 | G-01 | Service/controller bootstrap in `init.server.luau` and `init.client.luau`; remove `Hello.luau` | gameplay | todo | | |
 | G-02 | `Config` modules and `Remotes.luau` | gameplay | todo | G-01 | |
 | M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | todo | G-01 | |
-| B-01 | Graybox map meeting the map contract (GDD section 9) | builder | todo | | |
+| B-01 | Graybox map meeting the map contract (GDD section 9) | builder | review | | built in Studio, needs saving; spawn regions carry `Band` and `Weight` attributes for G-03 |
 
 ## M1 — Core loop
 
