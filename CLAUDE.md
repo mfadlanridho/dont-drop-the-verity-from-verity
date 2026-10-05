@@ -11,5 +11,8 @@ Roblox game built with Rojo. Design: [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
   - One question, one answer. If the answer raises a follow-up, or the two of you disagree, stop and bring it to the user.
   - Facts only. Design decisions and anything that changes scope go to the user, not to another agent.
   - When you receive a question, reply to the sender in a few lines, change nothing on its behalf, and go back to your own task.
-  - Mention the exchange and what you learned in your next report to the user.
+  - Every exchange has an id. The first line of the question is `[Q-<asking role>-<MMDD>-<n>] <subject in a few words>`, for example `[Q-gameplay-1005-2] BankZone instance path`; `<n>` counts your own questions that day. The reply starts with the same id.
+  - The asker closes it. After reading the reply, send one line with the id: `Resolved` or `Not resolved, taking it to the user`. A close is an acknowledgement, not a follow-up question, and whoever receives one does not reply to it.
+  - If you asked and have no answer by your next report to the user, say so there with the id and use the copy-paste fallback below. If you answered and got no close, only say "answered, no close received" with the id in your report.
+  - Name the id, the outcome and what you learned in your next report to the user.
 - **Fallback: copy-paste block.** If the target agent has no open session, or the message is not delivered, end your message with one fenced code block per target agent, labelled with that agent's name just above it. The block must be a self-contained prompt the user can paste as is: say which agent is asking and for which task ID, give the context and file paths needed, ask the exact question, and say what form the answer should take. When you answer such a prompt, put the answer in a fenced block addressed back to the asking agent the same way.
