@@ -1,9 +1,9 @@
 -- Builds the stack carry animation as a KeyframeSequence at
 -- ReplicatedStorage.Assets.Animations.Carry, replacing any existing one.
 -- Not synced by Rojo: paste into the Studio command bar (edit mode) to
--- rebuild after changing the numbers, then save the place. To ship it, the
--- sequence must be published from the game owner's account (right-click it,
--- Save to Roblox) and its asset id put in Config.Stack.CarryAnimationId.
+-- rebuild after changing the numbers, then save the place. This copy is for
+-- previewing only: the game plays the published asset, which
+-- tools/carry_animation.py builds and uploads. Keep the pose numbers in step.
 --
 -- R15 only. Both arms reach up to steady the bottom orb and rock gently from
 -- side to side. Only the arms are keyed, so walk, idle and jump show through.
