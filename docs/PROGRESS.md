@@ -19,7 +19,7 @@ Goal: the project boots with the agreed structure and a graybox map.
 | G-02 | `Config` modules and `Remotes.luau` | gameplay | review | G-01 | Config: `Verity`, `Stack`, `Guardian`, `Drop`. Remotes live in `ReplicatedStorage.Remotes`. `Verity.PickupRadius` (6) is not in the GDD |
 | M-01 | `DataService` with in-memory session profile (no DataStore yet) | meta | todo | G-01 | |
 | B-01 | Graybox map meeting the map contract (GDD section 9) | builder | review | | built in Studio, needs saving; spawn regions carry `Band` and `Weight` attributes for G-03 |
-| B-08 | Tower map variant (`Workspace.MapTower`) to compare against the flat B-01 map | builder | review | | built in Studio, needs saving; contract tags held in a `ContractTag` attribute and spawns disabled until a layout is chosen; G-03 should wait for that choice |
+| B-08 | Tower map variant (`Workspace.MapTower`) to compare against the flat B-01 map | builder | review | | built in Studio, needs saving; contract tags held in a `ContractTag` attribute and spawns disabled until a layout is chosen; G-03 was written against the flat map and needs a recheck if the tower wins |
 
 ## M1 — Core loop
 
