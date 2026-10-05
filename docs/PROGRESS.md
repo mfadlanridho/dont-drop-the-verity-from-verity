@@ -27,10 +27,11 @@ Goal: collect, stack, bank. Playable without the Guardian.
 
 | ID | Task | Owner | Status | Depends on | Notes |
 | --- | --- | --- | --- | --- | --- |
-| G-03 | `VerityService`: spawn, cap, refill | gameplay | review | G-02, B-01 | pickups live in `Workspace.Pickups`, tag `VerityPickup`, attributes `Tier` and `Value`; G-04 collects through `VerityService.Collect(pickup)`. Placeholder orb until B-02. Region `Weight` attribute steers refills; GDD section 9 should list `Band` and `Weight` |
+| G-03 | `VerityService`: spawn, cap, refill | gameplay | review | G-02, B-01 | pickups live in `Workspace.Pickups`, tag `VerityPickup`, attributes `Tier` and `Value`; G-04 collects through `VerityService.Collect(pickup)`. Placeholder orb until B-02. Region `Weight` attribute steers refills; GDD section 9 should list `Weight`. Floors 2 and 3 spawn nothing until `Config.Verity.ZoneTiers` lists `Zone2` and `Zone3` (G-10) |
 | G-04 | `StackService`: server stack state, pickup validation, capacity, speed penalty | gameplay | todo | G-03 | |
 | G-05 | `StackController`: head stack visuals with visual cap | gameplay | todo | G-04 | |
 | G-06 | `BankService`: bank zone converts stack to banked Veritys | gameplay | todo | G-04, M-01 | |
+| G-11 | `ReturnPadService`: return pads send the character to the lobby | gameplay | review | B-08 | staying on a `ReturnPad` for `Config.ReturnPad.ChannelSeconds` (1.5, user to confirm; 0 = instant) moves the character to `ReturnTarget`; stack untouched; player attribute `ReturnAt` holds the server time the teleport fires, for a UI countdown |
 | U-01 | HUD: stack count / capacity, banked Veritys | ui | todo | G-04 | |
 | B-02 | Verity orb model | builder | todo | | |
 | Q-01 | Playtest M1 loop, report trip time and feel | qa | todo | G-06, U-01 | |
