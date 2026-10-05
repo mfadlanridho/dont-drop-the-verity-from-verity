@@ -67,7 +67,7 @@ return table.freeze({
 	-- Studio, straight from the KeyframeSequence of the same name under
 	-- ReplicatedStorage.Assets.Animations (Carry, Strain).
 	CarryAnimationId = "rbxassetid://103959159779590",
-	StrainAnimationId = "",
+	StrainAnimationId = "rbxassetid://98274000309647",
 	-- How full the stack is (weight / capacity) when strain starts to show.
 	-- It grows from there to full strain at capacity.
 	StrainStart = 0.5,
